@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Video Downloader - Real-time Progress</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="box">
+        <div class="header">
+            <h1>📥 Video Downloader</h1>
+            <p class="subtitle">Hỗ trợ: YouTube, Facebook, Instagram, TikTok, Twitter và nhiều nền tảng khác</p>
+        </div>
+
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="url" 
+                placeholder="Dán link video vào đây... (VD: https://youtube.com/watch?v=...)" 
+                autocomplete="off"
+            />
+        </div>
+        
+        <div class="format-group">
+            <label for="format">Chọn định dạng:</label>
+            <select id="format">
+                <option value="mp4">🎬 Video MP4 (1080p - chất lượng tốt nhất)</option>
+                <option value="mp3">🎵 Audio MP3 (320kbps - chỉ âm thanh)</option>
+                <option value="auto">✨ Tự động (định dạng tốt nhất)</option>
+            </select>
+        </div>
+
+        <button id="downloadBtn" onclick="startDownload()">
+            <span id="btnText">⬇️ TẢI XUỐNG</span>
+        </button>
+
+        <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="status-header">
+                <div id="status" class="status-text">Đang chuẩn bị...</div>
+                <div id="percent" class="percent-text">0%</div>
+            </div>
+            
+            <div class="progress-bar-wrapper">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+            
+            <div class="info-row">
+                <div class="info-item">
+                    <span class="label">Tốc độ:</span>
+                    <span id="speed" class="value">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Thời gian còn lại:</span>
+                    <span id="eta" class="value">--</span>
+                </div>
+            </div>
+            
+            <div id="filename" class="filename"></div>
+            <div id="videoTitle" class="video-title"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>📝 Hướng dẫn sử dụng:</h3>
+            <ol>
+                <li>Copy link video từ YouTube, Facebook, Instagram, TikTok, v.v.</li>
+                <li>Dán link vào ô nhập liệu ở trên</li>
+                <li>Chọn định dạng mong muốn (MP4 cho video, MP3 cho audio)</li>
+                <li>Nhấn nút "TẢI XUỐNG" và đợi quá trình hoàn tất</li>
+                <li>Video sẽ được lưu vào thư mục <code>downloads</code></li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
