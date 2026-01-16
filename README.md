@@ -7,9 +7,11 @@ Web application cho phép tải video từ nhiều nền tảng khác nhau với
 - ✅ Tải video từ **YouTube, Facebook, Instagram, TikTok, Twitter** và nhiều nền tảng khác
 - ✅ Hiển thị **tiến trình tải real-time** (%, tốc độ, thời gian còn lại)
 - ✅ Hỗ trợ tải **video MP4 (1080p)** hoặc **audio MP3 (320kbps)**
-- ✅ Giao diện web đẹp, responsive, dễ sử dụng
+- ✅ Giao diện web đẹp, responsive, dễ sử dụng với animations mượt mà
 - ✅ Tự động mở trình duyệt khi khởi động
 - ✅ WebSocket để cập nhật tiến trình không cần reload
+- ✅ **Cross-platform**: Hoạt động mượt mà trên **Windows, macOS, và Linux**
+- ✅ **Unicode support**: Xử lý tên video tiếng Việt và các ngôn ngữ khác
 
 ## 📋 Yêu cầu hệ thống
 
@@ -19,10 +21,12 @@ Web application cho phép tải video từ nhiều nền tảng khác nhau với
 ### Cài đặt FFmpeg:
 
 **Windows:**
-1. Tải FFmpeg từ: https://ffmpeg.org/download.html
-2. Giải nén và thêm vào PATH
+```bash
+winget install ffmpeg
+```
+Hoặc tải từ: https://ffmpeg.org/download.html
 
-**Mac:**
+**macOS:**
 ```bash
 brew install ffmpeg
 ```
@@ -31,6 +35,16 @@ brew install ffmpeg
 ```bash
 sudo apt update
 sudo apt install ffmpeg
+```
+
+**Linux (Fedora/RHEL):**
+```bash
+sudo dnf install ffmpeg
+```
+
+**Kiểm tra FFmpeg đã cài đặt:**
+```bash
+ffmpeg -version
 ```
 
 ## 🚀 Cài đặt và Chạy
@@ -42,7 +56,11 @@ git clone <repository-url>
 cd video-downloader
 ```
 
-### 2. Tạo môi trường ảo (khuyến nghị)
+### 2. Cài đặt FFmpeg
+
+Xem phần [Yêu cầu hệ thống](#-yêu-cầu-hệ-thống) ở trên
+
+### 3. Tạo môi trường ảo (khuyến nghị)
 
 ```bash
 # Windows
@@ -54,19 +72,25 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 3. Cài đặt dependencies
+### 4. Cài đặt dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Chạy ứng dụng
+### 5. Chạy ứng dụng
 
 ```bash
+# Windows
 python app.py
+
+# Mac/Linux
+python3 app.py
 ```
 
 Trình duyệt sẽ tự động mở tại: `http://127.0.0.1:5000`
+
+**Lưu ý cho macOS:** Nếu port 5000 bị chiếm bởi AirPlay Receiver, app sẽ tự động chọn port khác (5001, 5002...). Xem chi tiết trong [INSTALL_MAC.md](INSTALL_MAC.md)
 
 ## 📁 Cấu trúc thư mục
 

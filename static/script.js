@@ -1,5 +1,7 @@
 // Initialize Socket.IO connection
-const socket = io();
+const socket = io({
+    transports: ['polling', 'websocket']
+});
 
 // DOM Elements
 const urlInput = document.getElementById("url");
@@ -11,26 +13,20 @@ const statusText = document.getElementById("status");
 const percentText = document.getElementById("percent");
 const progressBar = document.getElementById("progressBar");
 const videoTitleText = document.getElementById("videoTitle");
+const speedText = document.getElementById("speed");
+const etaText = document.getElementById("eta");
+const filenameText = document.getElementById("filename");
 
 let isDownloading = false;
 
 // Socket.IO Events
 socket.on("connect", () => {
-    console.log("Connected to server");
+    console.log("✅ Connected to server! Socket ID:", socket.id);
     statusText.textContent = "Đã kết nối với server";
 });
 
 socket.on("connected", (data) => {
     console.log("Server ready:", data.status);
-});
-
-socket.on("status", (data) => {
-    showProgress();
-    statusText.textContent = data.msg;
-    if (data.percent) {
-        updatePercent(data.percent);
-    }
-    console.log("Status:", data); // Debug
 });
 
 socket.on("status", (data) => {
@@ -107,8 +103,13 @@ socket.on("error", (data) => {
 
 // Functions
 function startDownload() {
+    console.log("🚀 startDownload called");
     const url = urlInput.value.trim();
     const format = formatSelect.value;
+    
+    console.log("URL:", url);
+    console.log("Format:", format);
+    console.log("Socket connected:", socket.connected);
     
     if (!url) {
         alert("⚠️ Vui lòng nhập URL video!");
@@ -130,7 +131,9 @@ function startDownload() {
     
     // Start download
     isDownloading = true;
+    console.log("📤 Emitting start_download event...");
     socket.emit("start_download", { url, format });
+    console.log("✅ Event emitted!");
 }
 
 function showProgress() {
@@ -146,7 +149,6 @@ function resetProgress() {
     statusText.className = "status-text";
     percentText.textContent = "0%";
     progressBar.style.width = "0%";
-    progressBar.querySelector('.progress-percent-inside').textContent = "";
     videoTitleText.textContent = "";
     videoTitleText.style.display = "none";
 }
@@ -159,14 +161,6 @@ function updatePercent(percentStr) {
     if (!isNaN(percentNum)) {
         const clampedPercent = Math.min(Math.max(percentNum, 0), 100);
         progressBar.style.width = clampedPercent + "%";
-        
-        // Show percentage inside the bar if >= 10%
-        const insideText = progressBar.querySelector('.progress-percent-inside');
-        if (clampedPercent >= 10) {
-            insideText.textContent = percentStr;
-        } else {
-            insideText.textContent = "";
-        }
         
         // Change color when complete
         if (clampedPercent >= 100) {

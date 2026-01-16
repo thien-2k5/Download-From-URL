@@ -10,11 +10,37 @@ import re
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "youtube-downloader-secret-2026"
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # ================== SETUP ==================
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+# ================== ENCODING HELPER ==================
+def safe_print(message):
+    """
+    Safely print messages with Unicode characters across all platforms
+    """
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        # Fallback to ASCII-safe printing
+        try:
+            print(message.encode('ascii', 'ignore').decode('ascii'))
+        except:
+            print("[Message contains special characters]")
+
+# ================== FFMPEG SETUP ==================
+# Add FFmpeg to PATH if installed via winget on Windows
+import glob
+if os.name == 'nt':  # Windows only
+    winget_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
+    if os.path.exists(winget_path):
+        ffmpeg_dirs = glob.glob(os.path.join(winget_path, "Gyan.FFmpeg*", "ffmpeg-*", "bin"))
+        if ffmpeg_dirs:
+            os.environ["PATH"] = ffmpeg_dirs[0] + os.pathsep + os.environ.get("PATH", "")
+            safe_print(f"[FFmpeg] Added to PATH: {ffmpeg_dirs[0]}")
+# For Mac/Linux, FFmpeg should be in system PATH after 'brew install ffmpeg' or 'apt install ffmpeg'
 
 # ================== ROUTES ==================
 @app.route("/")
@@ -33,8 +59,14 @@ def handle_disconnect():
 
 @socketio.on("start_download")
 def start_download(data):
+    safe_print(f"\n[EVENT] Received start_download")
+    safe_print(f"[DATA] {data}")
+    
     url = data.get("url", "").strip()
     fmt = data.get("format", "auto")
+    
+    safe_print(f"[URL] {url}")
+    safe_print(f"[FORMAT] {fmt}\n")
     
     if not url:
         socketio.emit("error", {"msg": "Vui lòng nhập URL!"})
@@ -82,7 +114,7 @@ def start_download(data):
                         "status": "downloading"
                     })
                     
-                    print(f"[Progress] {overall_percent:.1f}%")
+                    safe_print(f"[Progress] {overall_percent:.1f}%")
                 
             elif status == "finished":
                 filename = d.get("filename", "")
@@ -95,10 +127,10 @@ def start_download(data):
                     "msg": "Đang xử lý video..."
                 })
                 
-                print(f"[Finished] {filename}")
+                safe_print(f"[Finished] {filename}")
                 
         except Exception as e:
-            print(f"Progress hook error: {e}")
+            safe_print(f"Progress hook error: {e}")
 
     # ================== FORMAT OPTIONS ==================
     if fmt == "mp3":
@@ -111,6 +143,7 @@ def start_download(data):
                 "preferredquality": "320"
             }],
             "progress_hooks": [progress_hook],
+            "noplaylist": True,
             "quiet": False,
             "no_warnings": False,
             "noprogress": False,
@@ -123,6 +156,7 @@ def start_download(data):
             "merge_output_format": "mp4",
             "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
             "progress_hooks": [progress_hook],
+            "noplaylist": True,
             "quiet": False,
             "no_warnings": False,
             "noprogress": False,
@@ -134,6 +168,7 @@ def start_download(data):
             "merge_output_format": "mp4",
             "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
             "progress_hooks": [progress_hook],
+            "noplaylist": True,
             "quiet": False,
             "no_warnings": False,
             "noprogress": False,
@@ -158,9 +193,9 @@ def start_download(data):
                     "msg": f"Bắt đầu tải: {title}"
                 })
                 
-                print(f"\n{'='*60}")
-                print(f"📹 Đang tải: {title}")
-                print(f"{'='*60}\n")
+                safe_print(f"\n{'='*60}")
+                safe_print(f"Downloading: {title}")
+                safe_print(f"{'='*60}\n")
                 
                 # Start download
                 socketio.emit("status", {"msg": "Đang tải xuống...", "percent": "0%"})
@@ -172,10 +207,10 @@ def start_download(data):
                 "percent": "100%"
             })
             
-            print(f"\n{'='*60}")
-            print(f"✅ Hoàn tất: {title}")
-            print(f"📁 Lưu tại: {os.path.abspath(DOWNLOAD_DIR)}")
-            print(f"{'='*60}\n")
+            safe_print(f"\n{'='*60}")
+            safe_print(f"Completed: {title}")
+            safe_print(f"Saved to: {os.path.abspath(DOWNLOAD_DIR)}")
+            safe_print(f"{'='*60}\n")
             
         except Exception as e:
             error_msg = str(e)
@@ -192,22 +227,31 @@ def start_download(data):
             elif "HTTP Error 404" in error_msg:
                 error_msg = "Không tìm thấy video"
             
-            socketio.emit("error", {"msg": f"❌ {error_msg}"})
-            print(f"\n❌ Lỗi: {error_msg}\n")
+            socketio.emit("error", {"msg": f"Loi: {error_msg}"})
+            safe_print(f"\nError: {error_msg}\n")
 
     # Run in separate thread
     threading.Thread(target=run_download, daemon=True).start()
 
 # ================== AUTO OPEN BROWSER ==================
 def open_browser(port):
+    """
+    Open browser in a cross-platform way
+    """
     time.sleep(1.5)
-    webbrowser.open(f"http://127.0.0.1:{port}")
+    url = f"http://127.0.0.1:{port}"
+    try:
+        webbrowser.open(url)
+        safe_print(f"[Browser] Opened {url}")
+    except Exception as e:
+        safe_print(f"[Browser] Could not open automatically. Please visit: {url}")
+        safe_print(f"[Browser] Error: {e}")
 
 # ================== MAIN ==================
 if __name__ == "__main__":
     port = 5000
     
-    # Find available port
+    # Find available port (important for macOS where port 5000 may be used by AirPlay)
     while True:
         try:
             sock = socket.socket()
@@ -216,14 +260,17 @@ if __name__ == "__main__":
             break
         except OSError:
             port += 1
+            if port > 5010:  # Safety limit
+                print("Error: Cannot find available port!")
+                exit(1)
     
-    print(f"\n{'='*50}")
-    print(f"🚀 Server đang chạy tại: http://127.0.0.1:{port}")
-    print(f"📁 Thư mục tải về: {os.path.abspath(DOWNLOAD_DIR)}")
-    print(f"{'='*50}\n")
+    safe_print(f"\n{'='*50}")
+    safe_print(f"Server running at: http://127.0.0.1:{port}")
+    safe_print(f"Download directory: {os.path.abspath(DOWNLOAD_DIR)}")
+    safe_print(f"{'='*50}\n")
     
     # Open browser automatically
     threading.Timer(0.5, open_browser, args=(port,)).start()
     
-    # Run server with eventlet
+    # Run server with threading
     socketio.run(app, host="127.0.0.1", port=port, debug=False, allow_unsafe_werkzeug=True)

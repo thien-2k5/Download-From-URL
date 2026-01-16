@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Video Downloader - Real-time Progress</title>
+    <meta name="description" content="Tải video từ YouTube, Facebook, TikTok, Instagram và nhiều nền tảng khác với tiến trình real-time">
+    <title>📥 Video Downloader - Real-time Progress</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📥</text></svg>">
 </head>
 <body>
 <div class="container">
@@ -75,6 +79,6 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='script.js') }}"></script>
+<script src="{{ url_for('static', filename='script.js') }}?v=4"></script>
 </body>
 </html>
