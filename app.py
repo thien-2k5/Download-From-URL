@@ -185,8 +185,15 @@ def start_download(data):
                 duration = info.get('duration', 0)
                 
                 # Format duration
-                duration_str = f"{duration // 60}:{duration % 60:02d}" if duration else "N/A"
+                # duration_str = f"{duration // 60}:{duration % 60:02d}" if duration else "N/A"
                 
+                # Mới - ĐÃ SỬA:
+                if duration:
+                    duration_int = int(duration)  # Convert float to int
+                    duration_str = f"{duration_int // 60}:{duration_int % 60:02d}"
+                else:
+                    duration_str = "N/A"
+                    
                 socketio.emit("info", {
                     "title": title,
                     "duration": duration_str,
