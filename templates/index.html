@@ -3,82 +3,215 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="description" content="Tải video từ YouTube, Facebook, TikTok, Instagram và nhiều nền tảng khác với tiến trình real-time">
-    <title> Video Downloader - Real-time Progress</title>
+    <meta name="description" content="Professional Video Downloader with Smart Features">
+    <title>📥 Video Downloader Pro - Smart & Fast</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-    
-    <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📥</text></svg>">
 </head>
 <body>
-<div class="container">
-    <div class="box">
-        <div class="header">
-            <h1>🌐 Tải Video Online</h1>
-            <p class="subtitle">Hỗ trợ: YouTube, Facebook, Instagram, TikTok, Twitter và nhiều nền tảng khác</p>
-        </div>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <span id="themeIcon">🌙</span>
+    </div>
 
-        <div class="input-group">
-            <input 
-                type="text" 
-                id="url" 
-                placeholder="🔗 Dán link video vào đây... (VD: https://youtube.com/watch?v=...)" 
-                autocomplete="off"
-            />
-        </div>
-        
-        <div class="format-group">
-            <label for="format">Chọn định dạng:</label>
-            <select id="format">
-                <option value="mp4">🎬 Video MP4 (1080p - chất lượng tốt nhất)</option>
-                <option value="mp3">🎵 Audio MP3 (320kbps - chỉ âm thanh)</option>
-                <option value="auto">✨ Tự động (định dạng tốt nhất)</option>
-            </select>
-        </div>
-
-        <button id="downloadBtn" onclick="startDownload()">
-            <span id="btnText">⬇️ TẢI XUỐNG</span>
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('download')">
+            <span class="tab-icon">⬇️</span>
+            <span>Download</span>
         </button>
+        <button class="tab-btn" onclick="switchTab('history')">
+            <span class="tab-icon">📋</span>
+            <span>History</span>
+            <span class="badge" id="historyBadge">0</span>
+        </button>
+    </div>
 
-        <div class="progress-container" id="progressContainer" style="display: none;">
-            <div class="status-header">
-                <div id="status" class="status-text">Đang chuẩn bị...</div>
-                <div id="percent" class="percent-text">0%</div>
-            </div>
-            
-            <div class="progress-bar-wrapper">
-                <div id="progressBar" class="progress-bar"></div>
-            </div>
-            
-            <!-- <div class="info-row">
-                <div class="info-item">
-                    <span class="label">Tốc độ:</span>
-                    <span id="speed" class="value">--</span>
+    <div class="container">
+        <!-- DOWNLOAD TAB -->
+        <div id="downloadTab" class="tab-content active">
+            <div class="box">
+                <div class="header">
+                    <h1>📥 Video Downloader Pro</h1>
+                    <p class="subtitle">Hỗ trợ: YouTube, Facebook, Instagram, TikTok, Twitter và các nền tảng khác</p>
                 </div>
-                <div class="info-item">
-                    <span class="label">Thời gian còn lại:</span>
-                    <span id="eta" class="value">--</span>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="pasteFromClipboard()">
+                        📋 Paste từ Clipboard
+                    </button>
+                    <button class="quick-btn" onclick="clearInput()">
+                        🗑️ Xóa
+                    </button>
                 </div>
-            </div> -->
-            
-            <div id="filename" class="filename"></div>
-            <div id="videoTitle" class="video-title"></div>
+
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="url" 
+                        placeholder="Dán link video vào đây... (VD: https://youtube.com/watch?v=...)" 
+                        autocomplete="off"
+                    />
+                    <button class="preview-btn" onclick="previewVideo()">
+                        🔍 Preview
+                    </button>
+                </div>
+
+                <!-- Video Preview Card -->
+                <div id="videoPreview" class="video-preview" style="display: none;">
+                    <div class="preview-content">
+                        <img id="previewThumbnail" src="" alt="Thumbnail" style="display: none;">
+                        <div class="preview-info">
+                            <h3 id="previewTitle"></h3>
+                            <div class="preview-meta">
+                                <span id="previewPlatform"></span>
+                                <span id="previewDuration"></span>
+                                <span id="previewViews"></span>
+                            </div>
+                            <div id="previewFormats" class="preview-formats"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="format-group">
+                    <label for="format">Chọn định dạng:</label>
+                    <select id="format">
+                        <option value="mp4">🎬 Video MP4</option>
+                        <option value="mp3">🎵 Audio MP3 (320kbps)</option>
+                        <option value="auto">✨ Tự động (tốt nhất)</option>
+                    </select>
+                </div>
+
+                <div class="quality-group" id="qualityGroup">
+                    <label for="quality">Chất lượng:</label>
+                    <select id="quality">
+                        <option value="best">⭐ Tốt nhất</option>
+                        <option value="2160p">🔥 4K (2160p)</option>
+                        <option value="1440p">💎 2K (1440p)</option>
+                        <option value="1080p">✨ Full HD (1080p)</option>
+                        <option value="720p">📺 HD (720p)</option>
+                        <option value="480p">📱 SD (480p)</option>
+                    </select>
+                </div>
+
+                <button id="downloadBtn" onclick="startDownload()">
+                    <span id="btnText">⬇️ TẢI XUỐNG</span>
+                </button>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="status-header">
+                        <div id="status" class="status-text">Đang chuẩn bị...</div>
+                        <div id="percent" class="percent-text">0%</div>
+                    </div>
+                    
+                    <div class="progress-bar-wrapper">
+                        <div id="progressBar" class="progress-bar"></div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="info-item">
+                            <span class="label">Tốc độ:</span>
+                            <span id="speed" class="value">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Đã tải:</span>
+                            <span id="downloaded" class="value">--</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Tổng:</span>
+                            <span id="total" class="value">--</span>
+                        </div>
+                    </div>
+                    
+                    <div id="videoTitle" class="video-title"></div>
+                </div>
+
+                <div class="instructions">
+                    <h3>📖 Hướng dẫn sử dụng:</h3>
+                    <ol>
+                        <li><strong>Dán link video:</strong> Copy link từ YouTube, Facebook, Instagram, TikTok... rồi dán vào ô nhập liệu (hoặc nhấn nút "📋 Paste từ Clipboard")</li>
+                        <li><strong>Xem trước (tùy chọn):</strong> Nhấn nút "🔍 Preview" để xem thông tin video trước khi tải</li>
+                        <li><strong>Chọn định dạng:</strong> Chọn MP4 (video), MP3 (chỉ âm thanh) hoặc Tự động</li>
+                        <li><strong>Chọn chất lượng:</strong> Nếu chọn MP4, bạn có thể chọn chất lượng từ 480p đến 4K</li>
+                        <li><strong>Tải xuống:</strong> Nhấn nút "⬇️ TẢI XUỐNG" và đợi quá trình hoàn tất</li>
+                        <li><strong>Tìm file:</strong> Video đã tải sẽ được lưu trong thư mục <code>downloads</code></li>
+                    </ol>
+                    
+                    <div class="keyboard-shortcuts">
+                        <h4>⌨️ Phím tắt hữu ích:</h4>
+                        <div class="shortcuts-grid">
+                            <div><kbd>Ctrl + V</kbd> Dán URL nhanh</div>
+                            <div><kbd>Enter</kbd> Bắt đầu tải</div>
+                            <div><kbd>Ctrl + K</kbd> Xóa ô nhập</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tips-section">
+                        <h4>💡 Mẹo sử dụng:</h4>
+                        <ul class="tips-list">
+                            <li>🌙 Nhấn biểu tượng mặt trăng ở góc trên để bật Dark Mode</li>
+                            <li>📋 Xem lại lịch sử tải xuống tại tab "History"</li>
+                            <li>🔍 Sử dụng thanh tìm kiếm trong History để tìm video cũ</li>
+                            <li>📤 Export lịch sử thành file JSON để backup</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="instructions">
-            <h3>📝 Hướng dẫn sử dụng:</h3>
-            <ol>
-                <li>Copy link video từ YouTube, Facebook, Instagram, TikTok, v.v.</li>
-                <li>Dán link vào ô nhập liệu ở trên</li>
-                <li>Chọn định dạng mong muốn (MP4 cho video, MP3 cho audio)</li>
-                <li>Nhấn nút "TẢI XUỐNG" và đợi quá trình hoàn tất</li>
-                <li>Video sẽ được lưu vào thư mục <code>downloads</code></li>
-            </ol>
+        <!-- HISTORY TAB -->
+        <div id="historyTab" class="tab-content">
+            <div class="box">
+                <div class="section-header">
+                    <h2>📋 Lịch sử tải xuống</h2>
+                    <div class="header-actions">
+                        <button class="action-btn export-btn" onclick="exportHistory()">
+                            📤 Export JSON
+                        </button>
+                        <button class="action-btn clear-btn" onclick="clearHistory()">
+                            🗑️ Xóa tất cả
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="search-bar">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="🔍 Tìm kiếm theo tên, platform, URL..."
+                        oninput="searchHistory(this.value)"
+                    />
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="filter-tabs">
+                    <button class="filter-btn active" onclick="filterHistory('all')">
+                        Tất cả
+                    </button>
+                    <button class="filter-btn" onclick="filterHistory('success')">
+                        ✅ Thành công
+                    </button>
+                    <button class="filter-btn" onclick="filterHistory('failed')">
+                        ❌ Thất bại
+                    </button>
+                    <button class="filter-btn" onclick="filterHistory('mp4')">
+                        🎬 MP4
+                    </button>
+                    <button class="filter-btn" onclick="filterHistory('mp3')">
+                        🎵 MP3
+                    </button>
+                </div>
+                
+                <div id="historyList" class="history-list">
+                    <div class="loading">Đang tải...</div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="{{ url_for('static', filename='script.js') }}?v=4"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=15"></script>
 </body>
 </html>
