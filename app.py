@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 import yt_dlp
 import threading
@@ -6,13 +6,13 @@ import os
 import webbrowser
 import socket
 import time
-import json
+import uuid
+from urllib.parse import urlparse
+import requests
 from datetime import datetime
 import sqlite3
-from pathlib import Path
+import json
 import re
-import requests
-from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "youtube-downloader-secret-2026"
@@ -44,26 +44,6 @@ def init_db():
 
 init_db()
 
-# ================== ENCODING HELPER ==================
-def safe_print(message):
-    try:
-        print(message)
-    except UnicodeEncodeError:
-        try:
-            print(message.encode('ascii', 'ignore').decode('ascii'))
-        except:
-            print("[Message contains special characters]")
-
-# ================== FFMPEG SETUP ==================
-import glob
-if os.name == 'nt':
-    winget_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
-    if os.path.exists(winget_path):
-        ffmpeg_dirs = glob.glob(os.path.join(winget_path, "Gyan.FFmpeg*", "ffmpeg-*", "bin"))
-        if ffmpeg_dirs:
-            os.environ["PATH"] = ffmpeg_dirs[0] + os.pathsep + os.environ.get("PATH", "")
-            safe_print(f"[FFmpeg] Added to PATH: {ffmpeg_dirs[0]}")
-
 # ================== HELPER FUNCTIONS ==================
 def get_file_size(filepath):
     """Get file size in bytes"""
@@ -84,16 +64,19 @@ def format_file_size(bytes):
 
 def save_to_db(data):
     """Save download record to database"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''INSERT INTO downloads 
-                 (title, url, platform, format, file_size, duration, filename, status, download_date, error_msg)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-              (data.get('title'), data.get('url'), data.get('platform'), data.get('format'),
-               data.get('file_size'), data.get('duration'),
-               data.get('filename'), data.get('status'), datetime.now(), data.get('error_msg')))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''INSERT INTO downloads 
+                     (title, url, platform, format, file_size, duration, filename, status, download_date, error_msg)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                  (data.get('title'), data.get('url'), data.get('platform'), data.get('format'),
+                   data.get('file_size'), data.get('duration'),
+                   data.get('filename'), data.get('status'), datetime.now(), data.get('error_msg')))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        safe_print(f"[DB] Error saving to database: {e}")
 
 def get_platform_icon(platform):
     """Get emoji icon for platform"""
@@ -113,131 +96,336 @@ def get_platform_icon(platform):
             return icon
     return '🌐'
 
-# ================== ROUTES ==================
+# ================== QUEUE STATE ==================
+download_queue = []  # List of {id, url, format, status, title, progress, ip, protocol, headers}
+is_downloading = False
+queue_lock = threading.Lock()
+
+# ================== STATISTICS ==================
+server_start_time = datetime.now()
+stats = {
+    "total_downloads": 0,
+    "successful_downloads": 0,
+    "failed_downloads": 0,
+    "total_bytes": 0,
+    "connection_count": 0
+}
+
+# ================== ENCODING HELPER ==================
+def safe_print(message):
+    """
+    Safely print messages with Unicode characters across all platforms
+    """
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        try:
+            print(message.encode('ascii', 'ignore').decode('ascii'))
+        except:
+            print("[Message contains special characters]")
+
+# ================== FFMPEG SETUP ==================
+import glob
+if os.name == 'nt':  # Windows only
+    winget_path = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WinGet", "Packages")
+    if os.path.exists(winget_path):
+        ffmpeg_dirs = glob.glob(os.path.join(winget_path, "Gyan.FFmpeg*", "ffmpeg-*", "bin"))
+        if ffmpeg_dirs:
+            os.environ["PATH"] = ffmpeg_dirs[0] + os.pathsep + os.environ.get("PATH", "")
+            safe_print(f"[FFmpeg] Added to PATH: {ffmpeg_dirs[0]}")
+
+# ================== NETWORK HELPERS ==================
+def resolve_dns(url):
+    """Resolve domain name to IP address - demonstrates DNS lookup"""
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc or parsed.path.split('/')[0]
+        # Remove port if present
+        domain = domain.split(':')[0]
+        ip = socket.gethostbyname(domain)
+        return {
+            "domain": domain,
+            "ip": ip,
+            "protocol": parsed.scheme.upper() or "HTTP"
+        }
+    except socket.gaierror as e:
+        return {"domain": domain, "ip": "Unknown", "protocol": "Unknown", "error": str(e)}
+    except Exception as e:
+        return {"domain": "Unknown", "ip": "Unknown", "protocol": "Unknown", "error": str(e)}
+
+def get_url_headers(url):
+    """Get HTTP response headers from URL - demonstrates HTTP protocol"""
+    try:
+        response = requests.head(url, timeout=5, allow_redirects=True)
+        return {
+            "status_code": response.status_code,
+            "headers": dict(response.headers),
+            "url": response.url,
+            "is_https": response.url.startswith("https://")
+        }
+    except requests.exceptions.Timeout:
+        return {"error": "Connection timeout", "status_code": 0}
+    except requests.exceptions.ConnectionError:
+        return {"error": "Connection failed", "status_code": 0}
+    except Exception as e:
+        return {"error": str(e), "status_code": 0}
+
+# ================== WEB ROUTES ==================
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# ================== REST API ENDPOINTS ==================
+@app.route("/api/queue", methods=["GET"])
+def api_get_queue():
+    """GET /api/queue - Retrieve download queue (RESTful API)"""
+    return jsonify({
+        "success": True,
+        "queue": download_queue,
+        "count": len(download_queue),
+        "is_downloading": is_downloading
+    })
+
+@app.route("/api/download", methods=["POST"])
+def api_add_download():
+    """POST /api/download - Add URLs to queue (RESTful API with JSON body)"""
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "Invalid JSON"}), 400
+    
+    urls = data.get("urls", [])
+    fmt = data.get("format", "auto")
+    quality = data.get("quality", "best")
+    
+    if not urls:
+        return jsonify({"success": False, "error": "No URLs provided"}), 400
+    
+    added = []
+    for url in urls:
+        url = url.strip()
+        if not url:
+            continue
+        
+        # Resolve DNS for network info
+        dns_info = resolve_dns(url)
+        
+        item = {
+            "id": str(uuid.uuid4()),
+            "url": url,
+            "format": fmt,
+            "quality": quality,
+            "status": "pending",
+            "title": None,
+            "progress": "",
+            "ip": dns_info.get("ip", "Unknown"),
+            "domain": dns_info.get("domain", "Unknown"),
+            "protocol": dns_info.get("protocol", "Unknown")
+        }
+        
+        with queue_lock:
+            download_queue.append(item)
+        added.append(item)
+    
+    socketio.emit("queue_updated", {"queue": download_queue})
+    
+    return jsonify({
+        "success": True,
+        "added": len(added),
+        "items": added
+    })
+
+@app.route("/api/queue/<item_id>", methods=["DELETE"])
+def api_delete_queue_item(item_id):
+    """DELETE /api/queue/{id} - Remove item from queue (RESTful API)"""
+    global download_queue
+    
+    with queue_lock:
+        original_len = len(download_queue)
+        download_queue = [item for item in download_queue if item["id"] != item_id]
+        removed = original_len - len(download_queue)
+    
+    socketio.emit("queue_updated", {"queue": download_queue})
+    
+    return jsonify({
+        "success": removed > 0,
+        "removed": removed
+    })
+
+@app.route("/api/status", methods=["GET"])
+def api_status():
+    """GET /api/status - Server status and statistics (RESTful API)"""
+    uptime = datetime.now() - server_start_time
+    
+    return jsonify({
+        "success": True,
+        "server": {
+            "uptime_seconds": int(uptime.total_seconds()),
+            "uptime_formatted": str(uptime).split('.')[0],
+            "start_time": server_start_time.isoformat()
+        },
+        "stats": stats,
+        "queue": {
+            "count": len(download_queue),
+            "is_downloading": is_downloading
+        }
+    })
+
+@app.route("/api/info", methods=["POST"])
+def api_url_info():
+    """POST /api/info - Get network info for URL (DNS, headers)"""
+    data = request.get_json()
+    url = data.get("url", "") if data else ""
+    
+    if not url:
+        return jsonify({"success": False, "error": "No URL provided"}), 400
+    
+    dns_info = resolve_dns(url)
+    headers_info = get_url_headers(url)
+    
+    return jsonify({
+        "success": True,
+        "url": url,
+        "dns": dns_info,
+        "http": headers_info
+    })
+
 @app.route("/api/history")
 def get_history():
     """Get download history"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT id, title, url, platform, format, file_size, duration, 
-                 filename, status, download_date, error_msg 
-                 FROM downloads ORDER BY download_date DESC LIMIT 100''')
-    
-    rows = c.fetchall()
-    conn.close()
-    
-    history = []
-    for row in rows:
-        history.append({
-            'id': row[0],
-            'title': row[1],
-            'url': row[2],
-            'platform': row[3],
-            'platform_icon': get_platform_icon(row[3]),
-            'format': row[4],
-            'file_size': format_file_size(row[5]) if row[5] else 'N/A',
-            'duration': row[6],
-            'filename': row[7],
-            'status': row[8],
-            'download_date': row[9],
-            'error_msg': row[10]
-        })
-    
-    return jsonify(history)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''SELECT id, title, url, platform, format, file_size, duration, 
+                     filename, status, download_date, error_msg 
+                     FROM downloads ORDER BY download_date DESC LIMIT 100''')
+        
+        rows = c.fetchall()
+        conn.close()
+        
+        history = []
+        for row in rows:
+            history.append({
+                'id': row[0],
+                'title': row[1],
+                'url': row[2],
+                'platform': row[3],
+                'platform_icon': get_platform_icon(row[3]),
+                'format': row[4],
+                'file_size': format_file_size(row[5]) if row[5] else 'N/A',
+                'duration': row[6],
+                'filename': row[7],
+                'status': row[8],
+                'download_date': row[9],
+                'error_msg': row[10]
+            })
+        
+        return jsonify(history)
+    except Exception as e:
+        return jsonify([])
 
 @app.route("/api/delete/<int:id>", methods=['DELETE'])
 def delete_record(id):
     """Delete a download record"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM downloads WHERE id=?", (id,))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("DELETE FROM downloads WHERE id=?", (id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route("/api/clear-history", methods=['POST'])
 def clear_history():
     """Clear all download history"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM downloads")
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("DELETE FROM downloads")
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route("/api/search-history", methods=['GET'])
 def search_history():
     """Search in download history"""
-    query = request.args.get('q', '').strip()
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT id, title, url, platform, format, file_size, duration, 
-                 filename, status, download_date, error_msg 
-                 FROM downloads 
-                 WHERE title LIKE ? OR platform LIKE ? OR url LIKE ?
-                 ORDER BY download_date DESC LIMIT 50''',
-              (f'%{query}%', f'%{query}%', f'%{query}%'))
-    
-    rows = c.fetchall()
-    conn.close()
-    
-    results = []
-    for row in rows:
-        results.append({
-            'id': row[0],
-            'title': row[1],
-            'url': row[2],
-            'platform': row[3],
-            'platform_icon': get_platform_icon(row[3]),
-            'format': row[4],
-            'file_size': format_file_size(row[5]) if row[5] else 'N/A',
-            'duration': row[6],
-            'filename': row[7],
-            'status': row[8],
-            'download_date': row[9],
-            'error_msg': row[10]
-        })
-    
-    return jsonify(results)
+    try:
+        query = request.args.get('q', '').strip()
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''SELECT id, title, url, platform, format, file_size, duration, 
+                     filename, status, download_date, error_msg 
+                     FROM downloads 
+                     WHERE title LIKE ? OR platform LIKE ? OR url LIKE ?
+                     ORDER BY download_date DESC LIMIT 50''',
+                  (f'%{query}%', f'%{query}%', f'%{query}%'))
+        
+        rows = c.fetchall()
+        conn.close()
+        
+        results = []
+        for row in rows:
+            results.append({
+                'id': row[0],
+                'title': row[1],
+                'url': row[2],
+                'platform': row[3],
+                'platform_icon': get_platform_icon(row[3]),
+                'format': row[4],
+                'file_size': format_file_size(row[5]) if row[5] else 'N/A',
+                'duration': row[6],
+                'filename': row[7],
+                'status': row[8],
+                'download_date': row[9],
+                'error_msg': row[10]
+            })
+        
+        return jsonify(results)
+    except Exception as e:
+        return jsonify([])
 
 @app.route("/api/export-history", methods=['GET'])
 def export_history():
     """Export history as JSON"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute('''SELECT title, url, platform, format, file_size, duration, 
-                 filename, status, download_date 
-                 FROM downloads ORDER BY download_date DESC''')
-    
-    rows = c.fetchall()
-    conn.close()
-    
-    export_data = []
-    for row in rows:
-        export_data.append({
-            'title': row[0],
-            'url': row[1],
-            'platform': row[2],
-            'format': row[3],
-            'file_size': format_file_size(row[4]) if row[4] else 'N/A',
-            'duration': row[5],
-            'filename': row[6],
-            'status': row[7],
-            'download_date': row[8]
-        })
-    
-    return jsonify(export_data)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('''SELECT title, url, platform, format, file_size, duration, 
+                     filename, status, download_date 
+                     FROM downloads ORDER BY download_date DESC''')
+        
+        rows = c.fetchall()
+        conn.close()
+        
+        export_data = []
+        for row in rows:
+            export_data.append({
+                'title': row[0],
+                'url': row[1],
+                'platform': row[2],
+                'format': row[3],
+                'file_size': format_file_size(row[4]) if row[4] else 'N/A',
+                'duration': row[5],
+                'filename': row[6],
+                'status': row[7],
+                'download_date': row[8]
+            })
+        
+        return jsonify(export_data)
+    except Exception as e:
+        return jsonify([])
 
-# ================== SOCKET EVENTS ==================
+# ================== SOCKET ==================
 @socketio.on("connect")
 def handle_connect():
     print("Client connected")
     emit("connected", {"status": "ready"})
+    # Send current queue state
+    emit("queue_updated", {"queue": download_queue})
 
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -290,7 +478,6 @@ def get_video_info(data):
                 # Get thumbnail with fallback
                 thumbnail = info.get('thumbnail', '')
                 if thumbnail:
-                    # Try to verify thumbnail is accessible
                     try:
                         response = requests.head(thumbnail, timeout=2)
                         if response.status_code != 200:
@@ -316,33 +503,203 @@ def get_video_info(data):
     
     threading.Thread(target=fetch_info, daemon=True).start()
 
-@socketio.on("start_download")
-def start_download(data):
-    safe_print(f"\n[EVENT] Received start_download")
-    safe_print(f"[DATA] {data}")
+# ================== QUEUE MANAGEMENT ==================
+@socketio.on("add_to_queue")
+def add_to_queue(data):
+    global download_queue
     
-    url = data.get("url", "").strip()
+    urls = data.get("urls", [])
     fmt = data.get("format", "auto")
     quality = data.get("quality", "best")
     
-    if not url:
-        socketio.emit("error", {"msg": "Vui lòng nhập URL!"})
+    safe_print(f"\n[QUEUE] Adding {len(urls)} URLs to queue (Format: {fmt}, Quality: {quality})")
+    
+    with queue_lock:
+        for url in urls:
+            url = url.strip()
+            if not url:
+                continue
+                
+            # Check if URL already in queue
+            if any(item["url"] == url for item in download_queue):
+                safe_print(f"[QUEUE] Skipping duplicate: {url}")
+                continue
+            
+            # Resolve DNS for network info
+            dns_info = resolve_dns(url)
+            safe_print(f"[DNS] {dns_info.get('domain')} -> {dns_info.get('ip')}")
+            
+            item = {
+                "id": str(uuid.uuid4()),
+                "url": url,
+                "format": fmt,
+                "quality": quality,
+                "status": "pending",  # pending, downloading, completed, error
+                "title": None,
+                "progress": "",
+                "ip": dns_info.get("ip", "Unknown"),
+                "domain": dns_info.get("domain", "Unknown"),
+                "protocol": dns_info.get("protocol", "HTTP")
+            }
+            download_queue.append(item)
+            safe_print(f"[QUEUE] Added: {url}")
+    
+    # Broadcast updated queue to all clients
+    socketio.emit("queue_updated", {"queue": download_queue})
+
+@socketio.on("remove_from_queue")
+def remove_from_queue(data):
+    global download_queue
+    
+    item_id = data.get("id")
+    
+    with queue_lock:
+        download_queue = [item for item in download_queue if item["id"] != item_id or item["status"] == "downloading"]
+    
+    socketio.emit("queue_updated", {"queue": download_queue})
+
+@socketio.on("clear_queue")
+def clear_queue():
+    global download_queue
+    
+    with queue_lock:
+        # Keep only downloading items
+        download_queue = [item for item in download_queue if item["status"] == "downloading"]
+    
+    socketio.emit("queue_updated", {"queue": download_queue})
+
+@socketio.on("start_queue_download")
+def start_queue_download():
+    global is_downloading
+    
+    if is_downloading:
+        safe_print("[QUEUE] Already downloading")
         return
     
+    # Find first pending item
+    pending_items = [item for item in download_queue if item["status"] == "pending"]
+    if not pending_items:
+        socketio.emit("error", {"msg": "Không có video nào trong hàng đợi!"})
+        return
+    
+    is_downloading = True
+    socketio.emit("download_started", {})
+    
+    # Start download in background thread
+    threading.Thread(target=process_queue, daemon=True).start()
+
+# ================== DOWNLOAD PROCESSOR ==================
+def process_queue():
+    global is_downloading, download_queue
+    
+    while True:
+        # Find next pending item
+        current_item = None
+        with queue_lock:
+            for item in download_queue:
+                if item["status"] == "pending":
+                    current_item = item
+                    item["status"] = "downloading"
+                    break
+        
+        if not current_item:
+            # No more items to download
+            break
+        
+        # Broadcast queue update
+        socketio.emit("queue_updated", {"queue": download_queue})
+        
+        # Download this item
+        success, title = download_single_item(current_item)
+        
+        # Update status and emit success notification
+        with queue_lock:
+            for item in download_queue:
+                if item["id"] == current_item["id"]:
+                    item["status"] = "completed" if success else "error"
+                    item["progress"] = "✅" if success else "❌"
+                    break
+        
+        # Update statistics
+        stats["total_downloads"] += 1
+        if success:
+            stats["successful_downloads"] += 1
+        else:
+            stats["failed_downloads"] += 1
+        
+        # Broadcast queue update
+        socketio.emit("queue_updated", {"queue": download_queue})
+        
+        # Emit individual item completion notification
+        if success:
+            socketio.emit("item_completed", {
+                "id": current_item["id"],
+                "title": title or current_item.get("title", "Video"),
+                "success": True
+            })
+        else:
+            socketio.emit("item_completed", {
+                "id": current_item["id"],
+                "title": title or current_item.get("title", "Video"),
+                "success": False
+            })
+        
+        # Auto-remove completed item after delay
+        def remove_completed_item(item_id):
+            global download_queue
+            time.sleep(3)  # Wait 3 seconds before removing
+            with queue_lock:
+                download_queue = [i for i in download_queue if i["id"] != item_id or i["status"] not in ["completed", "error"]]
+            socketio.emit("queue_updated", {"queue": download_queue})
+        
+        threading.Thread(target=remove_completed_item, args=(current_item["id"],), daemon=True).start()
+        
+        # Save to database (History)
+        try:
+            db_record = {
+                'title': title or current_item.get("title", "Video"),
+                'url': current_item["url"],
+                'platform': current_item.get("domain", "Unknown"), # We use domain as platform proxy here, or info['extractor'] if available
+                'format': current_item["format"],
+                'status': 'success' if success else 'failed',
+                'error_msg': None if success else "Download failed",
+                'duration': current_item.get("duration", "N/A"),
+                'filename': f"{title}.{current_item['format']}" if title else "unknown_file", # Rough estimate
+                'file_size': 0 # We might need to get real file size if possible
+            }
+            
+            # Additional info from success
+            if success:
+                # We can try to get file size
+                try:
+                   fpath = os.path.join(DOWNLOAD_DIR, f"{title}.mp3" if current_item['format'] == 'mp3' else f"{title}.mp4")
+                   if os.path.exists(fpath):
+                       db_record['file_size'] = os.path.getsize(fpath)
+                       db_record['filename'] = os.path.basename(fpath)
+                except:
+                    pass
+            
+            save_to_db(db_record)
+        except Exception as e:
+            safe_print(f"[DB] Failed to save history: {e}")
+
+        # Small delay between downloads
+        time.sleep(1)
+    
+    is_downloading = False
+    socketio.emit("all_downloads_complete", {})
+    safe_print("\n[QUEUE] All downloads complete!")
+
+def download_single_item(item):
+    """Download a single queue item. Returns (success, title) tuple."""
+    
+    url = item["url"]
+    fmt = item["format"]
+    quality = item.get("quality", "best")
+    item_id = item["id"]
+    
+    safe_print(f"\n[DOWNLOAD] Starting: {url}")
     socketio.emit("status", {"msg": "Đang phân tích video...", "percent": "0%"})
-    
-    download_info = {
-        'current_file': 1,
-        'total_files': 2,
-        'file_progress': {},
-        'start_time': time.time()
-    }
-    
-    db_record = {
-        'url': url,
-        'format': fmt,
-        'status': 'downloading'
-    }
     
     def progress_hook(d):
         try:
@@ -351,62 +708,30 @@ def start_download(data):
             if status == "downloading":
                 downloaded_bytes = d.get("downloaded_bytes", 0)
                 total_bytes = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-                speed = d.get("speed", 0)
-                eta = d.get("eta", 0)
                 
                 if total_bytes > 0:
-                    file_percent = (downloaded_bytes / total_bytes) * 100
-                    filename = d.get("filename", "")
-                    download_info['file_progress'][filename] = file_percent
+                    percent = (downloaded_bytes / total_bytes) * 100
+                    percent_str = f"{percent:.1f}%"
                     
-                    if len(download_info['file_progress']) > 0:
-                        avg_progress = sum(download_info['file_progress'].values()) / download_info['total_files']
-                        overall_percent = min(avg_progress, 100)
-                    else:
-                        overall_percent = file_percent
+                    # Update item progress
+                    with queue_lock:
+                        for queue_item in download_queue:
+                            if queue_item["id"] == item_id:
+                                queue_item["progress"] = percent_str
+                                break
                     
-                    socketio.emit("progress", {
-                        "percent": f"{overall_percent:.1f}%",
-                        "status": "downloading",
-                        "speed": f"{format_file_size(speed)}/s" if speed else "N/A",
-                        "eta": f"{int(eta)}s" if eta else "N/A",
-                        "downloaded": format_file_size(downloaded_bytes),
-                        "total": format_file_size(total_bytes)
-                    })
+                    socketio.emit("progress", {"percent": percent_str, "status": "downloading"})
+                    socketio.emit("queue_item_progress", {"id": item_id, "percent": percent_str})
                     
             elif status == "finished":
-                socketio.emit("progress", {
-                    "percent": "100%",
-                    "status": "processing",
-                    "msg": "Đang xử lý video..."
-                })
+                socketio.emit("progress", {"percent": "100%", "status": "processing", "msg": "Đang xử lý video..."})
                 
         except Exception as e:
             safe_print(f"Progress hook error: {e}")
-
-    # Common options WITHOUT thumbnail download
-    common_opts = {
-        "progress_hooks": [progress_hook],
-        "noplaylist": True,
-        "quiet": False,
-        "no_warnings": False,
-        "noprogress": False,
-        "nocheckcertificate": True,
-        "ignoreerrors": False,
-        "no_color": True,
-        "writethumbnail": False,  # Don't download thumbnail
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "http_headers": {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-us,en;q=0.5',
-            'Sec-Fetch-Mode': 'navigate',
-        }
-    }
-
+    
+    # ================== FORMAT OPTIONS ==================
     if fmt == "mp3":
         ydl_opts = {
-            **common_opts,
             "format": "bestaudio/best",
             "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
             "postprocessors": [{
@@ -414,121 +739,145 @@ def start_download(data):
                 "preferredcodec": "mp3",
                 "preferredquality": "320"
             }],
+            "progress_hooks": [progress_hook],
+            "noplaylist": True,
+            "quiet": False,
+            "no_warnings": False,
+            "noprogress": False,
         }
-        download_info['total_files'] = 1
-        
     elif fmt == "mp4":
+        # Logic adapted from original code to support quality selection
+        safe_print(f"[DOWNLOAD] Quality preference: {quality}")
+        
         format_string = f"bestvideo[height<={quality.replace('p', '')}][ext=mp4]+bestaudio[ext=m4a]/best[height<={quality.replace('p', '')}]" if quality != "best" else "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best"
         
         ydl_opts = {
-            **common_opts,
             "format": format_string,
             "merge_output_format": "mp4",
             "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
-            "postprocessors": [{
+            "progress_hooks": [progress_hook],
+            "noplaylist": True,
+            "quiet": False,
+            "no_warnings": False,
+            "noprogress": False,
+             "postprocessors": [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',
             }],
         }
-    else:
+    else:  # auto
         ydl_opts = {
-            **common_opts,
-            "format": "best[ext=mp4]/bestvideo+bestaudio/best",
+            "format": "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "merge_output_format": "mp4",
             "outtmpl": f"{DOWNLOAD_DIR}/%(title)s.%(ext)s",
-            "postprocessors": [{
-                'key': 'FFmpegVideoConvertor',
-                'preferedformat': 'mp4',
-            }],
+            "progress_hooks": [progress_hook],
+            "noplaylist": True,
+            "quiet": False,
+            "no_warnings": False,
+            "noprogress": False,
         }
 
-    def run_download():
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                socketio.emit("status", {"msg": "Đang lấy thông tin video...", "percent": "0%"})
-                
-                info = ydl.extract_info(url, download=False)
-                title = info.get('title', 'Unknown')
-                duration = info.get('duration', 0)
-                platform = info.get('extractor', 'Unknown')
-                
-                if duration:
-                    duration_int = int(duration)
-                    duration_str = f"{duration_int // 60}:{duration_int % 60:02d}"
-                else:
-                    duration_str = "N/A"
-                
-                db_record['title'] = title
-                db_record['platform'] = platform
-                db_record['duration'] = duration_str
-                
-                socketio.emit("info", {
-                    "title": title,
-                    "duration": duration_str,
-                    "platform": platform,
-                    "msg": f"Bắt đầu tải: {title}"
-                })
-                
-                safe_print(f"\n{'='*60}")
-                safe_print(f"Platform: {platform}")
-                safe_print(f"Downloading: {title}")
-                safe_print(f"{'='*60}\n")
-                
-                socketio.emit("status", {"msg": "Đang tải xuống...", "percent": "0%"})
-                result = ydl.download([url])
-                
-                # Get filename
-                filename = ydl.prepare_filename(info)
-                if fmt == "mp3":
-                    filename = filename.rsplit('.', 1)[0] + '.mp3'
-                
-                file_size = get_file_size(filename)
-                
-                db_record['filename'] = os.path.basename(filename)
-                db_record['file_size'] = file_size
-                db_record['status'] = 'success'
-                
-                save_to_db(db_record)
-                
-                elapsed_time = int(time.time() - download_info['start_time'])
-                
-                socketio.emit("done", {
-                    "msg": "✅ Tải hoàn tất! File đã được lưu vào thư mục 'downloads'",
-                    "percent": "100%",
-                    "file_size": format_file_size(file_size),
-                    "time_taken": f"{elapsed_time}s"
-                })
-                
-                safe_print(f"\n{'='*60}")
-                safe_print(f"Completed: {title}")
-                safe_print(f"Size: {format_file_size(file_size)}")
-                safe_print(f"Time: {elapsed_time}s")
-                safe_print(f"{'='*60}\n")
-                
-        except Exception as e:
-            error_msg = str(e)
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Get video info first
+            socketio.emit("status", {"msg": "Đang lấy thông tin video...", "percent": "0%"})
             
-            if "Video unavailable" in error_msg or "not available" in error_msg:
-                error_msg = "Video không khả dụng hoặc đã bị xóa"
-            elif "Private video" in error_msg:
-                error_msg = "Video ở chế độ riêng tư"
-            elif "Sign in" in error_msg or "login" in error_msg.lower():
-                error_msg = "Video yêu cầu đăng nhập"
-            elif "HTTP Error 403" in error_msg or "Forbidden" in error_msg:
-                error_msg = "Không có quyền truy cập"
-            elif "HTTP Error 404" in error_msg:
-                error_msg = "Không tìm thấy video"
-            elif "Unsupported URL" in error_msg:
-                error_msg = "Nền tảng chưa được hỗ trợ"
+            info = ydl.extract_info(url, download=False)
+            title = info.get('title', 'Unknown')
+            duration = info.get('duration', 0)
+            platform = info.get('extractor', 'Unknown')
             
-            db_record['status'] = 'failed'
-            db_record['error_msg'] = error_msg
-            save_to_db(db_record)
+            # Update item title and platform info
+            with queue_lock:
+                for queue_item in download_queue:
+                    if queue_item["id"] == item_id:
+                        queue_item["title"] = title
+                        queue_item["duration"] = f"{int(duration)//60}:{int(duration)%60:02d}" if duration else "N/A"
+                        queue_item["platform"] = platform
+                        break
             
-            socketio.emit("error", {"msg": f"Lỗi: {error_msg}"})
-            safe_print(f"\nError: {error_msg}\n")
+            # Update item title
+            with queue_lock:
+                for queue_item in download_queue:
+                    if queue_item["id"] == item_id:
+                        queue_item["title"] = title
+                        break
+            
+            # Broadcast queue update with title
+            socketio.emit("queue_updated", {"queue": download_queue})
+            
+            # Format duration
+            if duration:
+                duration_int = int(duration)
+                duration_str = f"{duration_int // 60}:{duration_int % 60:02d}"
+            else:
+                duration_str = "N/A"
+                
+            socketio.emit("info", {
+                "title": title,
+                "duration": duration_str,
+                "msg": f"Bắt đầu tải: {title}"
+            })
+            
+            safe_print(f"\n{'='*60}")
+            safe_print(f"Downloading: {title}")
+            safe_print(f"{'='*60}\n")
+            
+            # Start download
+            socketio.emit("status", {"msg": "Đang tải xuống...", "percent": "0%"})
+            ydl.download([url])
+            
+        # Success
+        socketio.emit("done", {
+            "msg": f"✅ Đã tải xong: {title}",
+            "percent": "100%"
+        })
+        
+        safe_print(f"\n{'='*60}")
+        safe_print(f"Completed: {title}")
+        safe_print(f"Saved to: {os.path.abspath(DOWNLOAD_DIR)}")
+        safe_print(f"{'='*60}\n")
+        
+        return True, title
+        
+    except Exception as e:
+        error_msg = str(e)
+        
+        # Simplify common error messages
+        if "Video unavailable" in error_msg:
+            error_msg = "Video không khả dụng hoặc đã bị xóa"
+        elif "Private video" in error_msg:
+            error_msg = "Video ở chế độ riêng tư"
+        elif "Sign in" in error_msg:
+            error_msg = "Video yêu cầu đăng nhập"
+        elif "HTTP Error 403" in error_msg:
+            error_msg = "Không có quyền truy cập video này"
+        elif "HTTP Error 404" in error_msg:
+            error_msg = "Không tìm thấy video"
+        
+        socketio.emit("error", {"msg": f"Lỗi: {error_msg}"})
+        safe_print(f"\nError: {error_msg}\n")
+        
+        return False, None
 
-    threading.Thread(target=run_download, daemon=True).start()
+# ================== LEGACY SINGLE DOWNLOAD (keeping for compatibility) ==================
+@socketio.on("start_download")
+def start_download(data):
+    """Legacy single download - now adds to queue and starts"""
+    url = data.get("url", "").strip()
+    url = data.get("url", "").strip()
+    fmt = data.get("format", "auto")
+    quality = data.get("quality", "best")
+    
+    if not url:
+        socketio.emit("error", {"msg": "Vui lòng nhập URL!"})
+        return
+    
+    # Add to queue
+    add_to_queue({"urls": [url], "format": fmt, "quality": quality})
+    
+    # Start queue processing
+    start_queue_download()
 
 # ================== AUTO OPEN BROWSER ==================
 def open_browser(port):
@@ -539,11 +888,13 @@ def open_browser(port):
         safe_print(f"[Browser] Opened {url}")
     except Exception as e:
         safe_print(f"[Browser] Could not open automatically. Please visit: {url}")
+        safe_print(f"[Browser] Error: {e}")
 
 # ================== MAIN ==================
 if __name__ == "__main__":
     port = 5000
     
+    # Find available port
     while True:
         try:
             sock = socket.socket()
@@ -559,9 +910,10 @@ if __name__ == "__main__":
     safe_print(f"\n{'='*50}")
     safe_print(f"Server running at: http://127.0.0.1:{port}")
     safe_print(f"Download directory: {os.path.abspath(DOWNLOAD_DIR)}")
-    safe_print(f"Database: {os.path.abspath(DB_PATH)}")
     safe_print(f"{'='*50}\n")
     
+    # Open browser automatically
     threading.Timer(0.5, open_browser, args=(port,)).start()
     
+    # Run server with threading
     socketio.run(app, host="127.0.0.1", port=port, debug=False, allow_unsafe_werkzeug=True)
