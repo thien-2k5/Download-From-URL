@@ -69,7 +69,7 @@ const addQueueBtn = document.getElementById('addQueueBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const btnText = document.getElementById('btnText');
 const queueList = document.getElementById('queueList');
-const queueCount = document.getElementById('queueCount');
+const queueCount = document.getElementById('queueBadge'); // Fixed: was 'queueCount' which doesn't exist
 const clearQueueBtn = document.getElementById('clearQueueBtn');
 const progressContainer = document.getElementById('progressContainer');
 const statusText = document.getElementById('status');
@@ -199,7 +199,8 @@ socket.on("video_info", (data) => {
 
 // ================== Queue Functions ==================
 function parseUrls(text) {
-    return text.split('\n')
+    // Handle both Windows (\r\n) and Unix (\n) line endings
+    return text.split(/\r?\n/)
         .map(url => url.trim())
         .filter(url => url.length > 0 && (url.startsWith('http://') || url.startsWith('https://')));
 }
@@ -335,6 +336,9 @@ function updateButtons() {
 }
 
 // ================== Preview Functions ==================
+let pendingPreviews = 0;
+let previewResults = [];
+
 function previewVideo() {
     const urls = parseUrls(urlInput.value.trim());
 
@@ -343,48 +347,83 @@ function previewVideo() {
         return;
     }
 
-    // Take first URL
-    const url = urls[0];
+    // Reset and show loading state
+    const previewContainer = document.getElementById('videoPreviewContainer');
+    const previewList = document.getElementById('videoPreviewList');
+    const previewCount = document.getElementById('previewCount');
 
-    videoPreview.style.display = 'none';
-    statusText.textContent = "🔍 Đang lấy thông tin video...";
-    progressContainer.style.display = 'block';
+    previewResults = [];
+    pendingPreviews = urls.length;
+    previewList.innerHTML = '<div class="preview-loading">🔍 Đang lấy thông tin ' + urls.length + ' video...</div>';
+    previewContainer.style.display = 'block';
+    previewCount.textContent = `0/${urls.length} video`;
 
-    socket.emit("get_video_info", { url });
+    // Fetch info for ALL URLs
+    urls.forEach((url, index) => {
+        socket.emit("get_video_info", { url, index });
+    });
+
+    showToast(`🔍 Đang lấy thông tin ${urls.length} video...`, 'info');
 }
 
 function displayVideoPreview(data) {
-    progressContainer.style.display = 'none';
-    videoPreview.style.display = 'block';
+    const previewContainer = document.getElementById('videoPreviewContainer');
+    const previewList = document.getElementById('videoPreviewList');
+    const previewCount = document.getElementById('previewCount');
 
-    const thumbnail = document.getElementById('previewThumbnail');
-    if (data.thumbnail) {
-        thumbnail.src = data.thumbnail;
-        thumbnail.style.display = 'block';
-        thumbnail.onerror = function () {
-            this.style.display = 'none';
-        };
-    } else {
-        thumbnail.style.display = 'none';
+    // Store the result
+    previewResults.push(data);
+    pendingPreviews--;
+
+    // Clear loading message on first result
+    if (previewResults.length === 1) {
+        previewList.innerHTML = '';
     }
 
-    document.getElementById('previewTitle').textContent = data.title;
-    document.getElementById('previewPlatform').textContent = `📱 ${data.platform}`;
-    document.getElementById('previewDuration').textContent = `⏱️ ${data.duration}`;
-    document.getElementById('previewViews').textContent = `👁️ ${data.view_count}`;
+    // Create a preview card for this video
+    const card = document.createElement('div');
+    card.className = 'video-preview-card';
 
-    const formatsDiv = document.getElementById('previewFormats');
-    formatsDiv.innerHTML = '';
+    const thumbnailHtml = data.thumbnail
+        ? `<img src="${data.thumbnail}" alt="Thumbnail" class="preview-thumbnail" onerror="this.style.display='none'">`
+        : '<div class="preview-thumbnail-placeholder">🎬</div>';
 
-    if (data.formats && data.formats.length > 0) {
-        data.formats.forEach(format => {
-            const badge = document.createElement('div');
-            badge.className = 'format-badge';
-            badge.textContent = `${format.quality} (${format.filesize})`;
-            formatsDiv.appendChild(badge);
-        });
+    const formatsHtml = (data.formats && data.formats.length > 0)
+        ? data.formats.map(f => `<span class="format-badge">${f.quality} (${f.filesize})</span>`).join('')
+        : '';
+
+    card.innerHTML = `
+        ${thumbnailHtml}
+        <div class="preview-card-info">
+            <h4 class="preview-card-title">${data.title || 'Unknown'}</h4>
+            <div class="preview-card-meta">
+                <span>📱 ${data.platform || 'Unknown'}</span>
+                <span>⏱️ ${data.duration || 'N/A'}</span>
+                <span>👁️ ${data.view_count || 'N/A'}</span>
+            </div>
+            <div class="preview-card-formats">${formatsHtml}</div>
+        </div>
+    `;
+
+    previewList.appendChild(card);
+
+    // Update count
+    const totalUrls = previewResults.length + pendingPreviews;
+    previewCount.textContent = `${previewResults.length}/${totalUrls} video`;
+
+    // Show toast when all done
+    if (pendingPreviews === 0) {
+        showToast(`✅ Đã lấy thông tin ${previewResults.length} video!`, 'success');
     }
 }
+
+function closeAllPreviews() {
+    const previewContainer = document.getElementById('videoPreviewContainer');
+    previewContainer.style.display = 'none';
+    previewResults = [];
+    pendingPreviews = 0;
+}
+
 
 // ================== History Functions ==================
 // ================== History Functions ==================
@@ -643,8 +682,14 @@ document.head.appendChild(style);
 // ================== Keyboard Shortcuts ==================
 urlInput.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'Enter') {
+        // Ctrl+Enter: Add to queue
         e.preventDefault();
         addToQueue();
+    } else if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+        // Enter (without modifiers): Download immediately
+        // Shift+Enter allows normal line break in textarea
+        e.preventDefault();
+        startDownload();
     }
 });
 

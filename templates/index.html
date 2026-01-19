@@ -83,21 +83,14 @@ https://tiktok.com/@user/video/123" autocomplete="off"></textarea>
                     🔍 Preview
                 </button>
 
-                <!-- Video Preview Container (Hidden by default) -->
-                <div id="videoPreview" class="video-preview" style="display: none; margin-top: 16px;">
-                    <div class="preview-content">
-                        <img id="previewThumbnail" src="" alt="Thumbnail" style="display: none;">
-                        <div class="preview-info">
-                            <h3 id="previewTitle"></h3>
-                            <div class="preview-meta">
-                                <span id="previewPlatform"></span>
-                                <span id="previewDuration"></span>
-                                <span id="previewViews"></span>
-                            </div>
-                            <div id="previewFormats" class="preview-formats"></div>
-                        </div>
-                        <button class="close-preview"
-                            onclick="document.getElementById('videoPreview').style.display='none'">×</button>
+                <!-- Video Preview Container - Supports multiple videos -->
+                <div id="videoPreviewContainer" class="video-preview-container" style="display: none; margin-top: 16px;">
+                    <div class="preview-header">
+                        <span id="previewCount">0 video</span>
+                        <button class="close-preview" onclick="closeAllPreviews()">× Đóng tất cả</button>
+                    </div>
+                    <div id="videoPreviewList" class="video-preview-list">
+                        <!-- Preview cards will be inserted here -->
                     </div>
                 </div>
 

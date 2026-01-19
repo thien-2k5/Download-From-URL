@@ -704,6 +704,10 @@ def download_single_item(item):
     def progress_hook(d):
         try:
             status = d.get("status")
+            # Debug: log every hook call
+            downloaded = d.get("downloaded_bytes", 0)
+            total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+            safe_print(f"[HOOK] status={status}, downloaded={downloaded}, total={total}")
             
             if status == "downloading":
                 downloaded_bytes = d.get("downloaded_bytes", 0)
@@ -713,6 +717,9 @@ def download_single_item(item):
                     percent = (downloaded_bytes / total_bytes) * 100
                     percent_str = f"{percent:.1f}%"
                     
+                    # Debug log
+                    safe_print(f"[PROGRESS] {percent_str}")
+                    
                     # Update item progress
                     with queue_lock:
                         for queue_item in download_queue:
@@ -720,11 +727,17 @@ def download_single_item(item):
                                 queue_item["progress"] = percent_str
                                 break
                     
-                    socketio.emit("progress", {"percent": percent_str, "status": "downloading"})
+                    # Emit with msg field for frontend compatibility
+                    socketio.emit("progress", {
+                        "percent": percent_str, 
+                        "msg": f"Đang tải xuống... {percent_str}",
+                        "status": "downloading"
+                    })
                     socketio.emit("queue_item_progress", {"id": item_id, "percent": percent_str})
                     
             elif status == "finished":
-                socketio.emit("progress", {"percent": "100%", "status": "processing", "msg": "Đang xử lý video..."})
+                safe_print("[PROGRESS] 100% - Processing...")
+                socketio.emit("progress", {"percent": "100%", "msg": "Đang xử lý video...", "status": "processing"})
                 
         except Exception as e:
             safe_print(f"Progress hook error: {e}")
