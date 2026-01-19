@@ -1,4 +1,4 @@
-# 📥 Video Downloader Pro
+# 📥 Video Downloader Pro - Smart & Fast
 
 <div align="center">
 
@@ -7,142 +7,100 @@
 ![License](https://img.shields.io/badge/license-MIT-orange.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
-**Web application chuyên nghiệp cho phép tải video/audio từ 1000+ nền tảng với giao diện hiện đại và tính năng nâng cao**
+**Web application chuyên nghiệp tải video/audio từ 1000+ nền tảng với giao diện hiện đại**
 
-[Tính năng](#-tính-năng-chính) • [Cài đặt](#-cài-đặt) • [Hướng dẫn](#-hướng-dẫn-sử-dụng) • [Demo](#-demo-screenshots) • [FAQ](#-câu-hỏi-thường-gặp)
+[Tính năng](#-tính-năng-chính) • [Cài đặt](#-cài-đặt-nhanh) • [Hướng dẫn](#-hướng-dẫn-sử-dụng) • [FAQ](#-xử-lý-lỗi-thường-gặp)
 
 </div>
 
 ---
 
-## 🌟 Tính năng chính
+## ✨ Tính năng chính
 
-### 🎬 Download Features
-- ✅ **Multi-platform Support**: Tải từ YouTube, Facebook, Instagram, TikTok, Twitter và **1000+ nền tảng**
-- ✅ **Quality Selection**: Chọn chất lượng video từ 480p đến 4K (2160p)
-- ✅ **Format Options**: MP4 (video), MP3 (audio 320kbps), hoặc tự động
-- ✅ **Real-time Progress**: Hiển thị tiến trình tải với tốc độ và thời gian còn lại
-- ✅ **Batch Information**: Xem trước thông tin video trước khi tải
+### 🎬 Download & Quality
+- ✅ Tải từ **YouTube, Facebook, Instagram, TikTok, Twitter** và **1000+ nền tảng**
+- ✅ Chọn chất lượng: **480p → 4K (2160p)**
+- ✅ Định dạng: **MP4 (video)**, **MP3 (audio 320kbps)**, hoặc **Tự động**
+- ✅ **Real-time Progress**: Hiển thị tốc độ, % tiến trình, ETA
+- ✅ **Video Preview**: Xem thông tin trước khi tải
 
-### 💾 Data Management
-- ✅ **Download History**: Lưu trữ lịch sử tải xuống với SQLite database
-- ✅ **Smart Search**: Tìm kiếm nhanh trong lịch sử theo tên, platform, URL
-- ✅ **Advanced Filters**: Lọc theo trạng thái (success/failed) và định dạng (MP4/MP3)
-- ✅ **Export Data**: Xuất lịch sử thành file JSON để backup
+### 💾 Smart Management
+- ✅ **Download History**: Lưu lịch sử với SQLite database
+- ✅ **Smart Search**: Tìm kiếm theo tên, platform, URL
+- ✅ **Advanced Filters**: Lọc theo status (success/failed), format (MP4/MP3)
+- ✅ **Export JSON**: Backup lịch sử dễ dàng
 
-### 🎨 User Experience
-- ✅ **Modern UI**: Giao diện đẹp với animations mượt mà
-- ✅ **Dark Mode**: Chế độ tối bảo vệ mắt, lưu preference
-- ✅ **Responsive Design**: Tối ưu cho cả desktop và mobile
-- ✅ **Clipboard Integration**: Paste URL trực tiếp từ clipboard
-- ✅ **Keyboard Shortcuts**: Phím tắt tăng tốc workflow
-- ✅ **Toast Notifications**: Thông báo đẹp mắt, không làm phiền
+### 🎨 Modern UI/UX
+- ✅ **Dark Mode**: Tự động lưu preference
+- ✅ **Clipboard Integration**: Paste URL nhanh chóng
+- ✅ **Keyboard Shortcuts**: `Ctrl+V`, `Enter`, `Ctrl+K`
+- ✅ **Toast Notifications**: Thông báo đẹp, không làm phiền
+- ✅ **Responsive**: Hoạt động mượt trên mọi thiết bị
 
-### ⚡ Technical Features
-- ✅ **WebSocket Real-time**: Cập nhật tiến trình không cần reload
-- ✅ **Cross-platform**: Hoạt động trên Windows, macOS, Linux
-- ✅ **Unicode Support**: Xử lý tên video tiếng Việt và các ngôn ngữ khác
-- ✅ **Auto Port Detection**: Tự động tìm port khả dụng (hữu ích cho macOS)
-- ✅ **Error Handling**: Xử lý lỗi thông minh với thông báo dễ hiểu
+### ⚡ Technical
+- ✅ **WebSocket**: Cập nhật real-time không reload
+- ✅ **Cross-platform**: Windows, macOS, Linux
+- ✅ **Unicode Support**: Xử lý tiếng Việt và đa ngôn ngữ
+- ✅ **Auto Port Detection**: Tự động tìm port khả dụng
 
 ---
 
-## 📋 Yêu cầu hệ thống
+## 📋 Yêu cầu
 
-### Phần mềm cần thiết
-- **Python**: 3.8 trở lên
-- **FFmpeg**: Để xử lý video/audio (bắt buộc)
-- **pip**: Python package manager
+- **Python 3.8+**
+- **FFmpeg** (bắt buộc)
 
-### Kiểm tra Python version
+### Kiểm tra nhanh
 ```bash
-python --version
-# hoặc
-python3 --version
-```
-
-### Kiểm tra pip
-```bash
-pip --version
-# hoặc
-python -m pip --version
+python --version    # hoặc python3 --version
+ffmpeg -version
 ```
 
 ---
 
-## 🚀 Cài đặt
+## 🚀 Cài đặt nhanh
 
-### Bước 1: Cài đặt FFmpeg
-
-FFmpeg là công cụ bắt buộc để xử lý video/audio. Chọn hướng dẫn phù hợp với hệ điều hành của bạn:
+### 1️⃣ Cài FFmpeg
 
 <details>
 <summary><b>🪟 Windows</b></summary>
 
-#### Phương án 1: Sử dụng winget (Khuyến nghị - Windows 10/11)
 ```bash
+# Sử dụng winget (khuyến nghị)
 winget install ffmpeg
-```
 
-#### Phương án 2: Tải thủ công
-1. Truy cập: https://github.com/BtbN/FFmpeg-Builds/releases
-2. Tải file: `ffmpeg-master-latest-win64-gpl.zip`
-3. Giải nén vào thư mục (VD: `C:\ffmpeg`)
-4. Thêm vào PATH:
-   - Mở **System Properties** → **Environment Variables**
-   - Trong **System Variables**, tìm **Path** → **Edit**
-   - **New** → Dán đường dẫn: `C:\ffmpeg\bin`
-   - **OK** để lưu
-
-#### Kiểm tra cài đặt
-```bash
+# Kiểm tra
 ffmpeg -version
 ```
+
+Hoặc tải từ: https://github.com/BtbN/FFmpeg-Builds/releases
 
 </details>
 
 <details>
 <summary><b>🍎 macOS</b></summary>
 
-#### Sử dụng Homebrew (Khuyến nghị)
 ```bash
-# Cài đặt Homebrew nếu chưa có
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Cài đặt FFmpeg
+# Sử dụng Homebrew
 brew install ffmpeg
-```
 
-#### Kiểm tra cài đặt
-```bash
+# Kiểm tra
 ffmpeg -version
 ```
-
-**Lưu ý macOS:** Port 5000 thường bị chiếm bởi AirPlay Receiver. App sẽ tự động chọn port khác (5001, 5002...).
 
 </details>
 
 <details>
 <summary><b>🐧 Linux</b></summary>
 
-#### Ubuntu/Debian
 ```bash
-sudo apt update
-sudo apt install ffmpeg
-```
+# Ubuntu/Debian
+sudo apt update && sudo apt install ffmpeg
 
-#### Fedora/RHEL/CentOS
-```bash
+# Fedora
 sudo dnf install ffmpeg
-```
 
-#### Arch Linux
-```bash
-sudo pacman -S ffmpeg
-```
-
-#### Kiểm tra cài đặt
-```bash
+# Kiểm tra
 ffmpeg -version
 ```
 
@@ -150,428 +108,185 @@ ffmpeg -version
 
 ---
 
-### Bước 2: Clone hoặc tải project
+### 2️⃣ Clone Project
 
 ```bash
-# Clone từ Git
-git clone https://github.com/your-username/video-downloader-pro.git
-cd video-downloader-pro
-
-# Hoặc tải ZIP và giải nén
+git clone https://github.com/thien-2k5/Download-From-URL.git
+cd Download-From-URL
 ```
 
 ---
 
-### Bước 3: Tạo môi trường ảo (Khuyến nghị)
+### 3️⃣ Tạo Virtual Environment (khuyến nghị)
 
-Môi trường ảo giúp cách ly dependencies, tránh xung đột với các project khác.
-
-<details>
-<summary><b>🪟 Windows</b></summary>
-
+**Windows:**
 ```bash
-# Tạo môi trường ảo
 python -m venv venv
-
-# Kích hoạt
 venv\Scripts\activate
-
-# Khi thấy (venv) ở đầu dòng lệnh là thành công
 ```
 
-</details>
-
-<details>
-<summary><b>🍎 macOS / 🐧 Linux</b></summary>
-
+**macOS/Linux:**
 ```bash
-# Tạo môi trường ảo
 python3 -m venv venv
-
-# Kích hoạt
 source venv/bin/activate
-
-# Khi thấy (venv) ở đầu dòng lệnh là thành công
 ```
-
-</details>
 
 ---
 
-### Bước 4: Cài đặt Python dependencies
+### 4️⃣ Cài Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Dependencies chính:**
-- `Flask` - Web framework
-- `Flask-SocketIO` - WebSocket support
-- `yt-dlp` - Video downloader core
-- `requests` - HTTP library
-
 ---
 
-### Bước 5: Chạy ứng dụng
+### 5️⃣ Chạy App
 
-<details>
-<summary><b>🪟 Windows</b></summary>
-
+**Windows:**
 ```bash
 python app.py
 ```
 
-</details>
-
-<details>
-<summary><b>🍎 macOS / 🐧 Linux</b></summary>
-
+**macOS/Linux:**
 ```bash
 python3 app.py
 ```
 
-</details>
-
-**Kết quả mong đợi:**
-```
-==================================================
-Server running at: http://127.0.0.1:5000
-Download directory: /path/to/downloads
-Database: /path/to/downloads.db
-==================================================
-
-[Browser] Opened http://127.0.0.1:5000
-```
-
-Trình duyệt sẽ tự động mở. Nếu không, mở thủ công: http://127.0.0.1:5000
+🎉 Trình duyệt tự động mở tại: `http://127.0.0.1:5000`
 
 ---
 
 ## 📖 Hướng dẫn sử dụng
 
-### 1️⃣ Tải video cơ bản
+### 🎬 Tải video cơ bản
 
-1. **Copy URL** video từ YouTube, TikTok, Facebook...
-2. **Paste URL** vào ô nhập (hoặc nhấn nút "📋 Paste từ Clipboard")
+1. **Copy URL** từ YouTube, TikTok, Facebook...
+2. **Paste** vào ô nhập (hoặc nhấn "📋 Paste từ Clipboard")
 3. **Chọn định dạng:**
-   - 🎬 **MP4**: Video full HD (có hình + âm thanh)
-   - 🎵 **MP3**: Chỉ âm thanh 320kbps
-   - ✨ **Tự động**: Chất lượng tốt nhất
-4. **Chọn chất lượng** (nếu chọn MP4):
-   - 🔥 4K (2160p)
-   - 💎 2K (1440p)
-   - ✨ Full HD (1080p)
-   - 📺 HD (720p)
-   - 📱 SD (480p)
+   - 🎬 MP4: Video full HD
+   - 🎵 MP3: Chỉ âm thanh
+   - ✨ Tự động: Chất lượng tốt nhất
+4. **Chọn chất lượng** (nếu chọn MP4): 480p → 4K
 5. **Nhấn "⬇️ TẢI XUỐNG"**
-6. **Theo dõi tiến trình** real-time
-7. **File tải về** nằm trong thư mục `downloads/`
+6. File lưu trong thư mục `downloads/`
 
----
+### 🔍 Preview Video
 
-### 2️⃣ Preview video (Xem trước)
+1. Paste URL
+2. Nhấn **"🔍 Preview"**
+3. Xem: Tiêu đề, thời lượng, lượt xem, chất lượng có sẵn
 
-**Mục đích:** Xem thông tin video trước khi quyết định tải
+### 📋 Quản lý lịch sử
 
-1. Paste URL vào ô nhập
-2. Nhấn nút **"🔍 Preview"**
-3. Xem thông tin:
-   - Tiêu đề video
-   - Thời lượng
-   - Lượt xem
-   - Nền tảng
-   - Các chất lượng có sẵn
+- **Xem lịch sử**: Tab "📋 History"
+- **Tìm kiếm**: Nhập từ khóa vào thanh search
+- **Lọc**: Tất cả / Success / Failed / MP4 / MP3
+- **Export**: Nhấn "📤 Export JSON"
+- **Copy URL**: Nhấn "📋 Copy URL" để tải lại
+- **Xóa**: Xóa từng item hoặc toàn bộ
 
----
+### ⌨️ Phím tắt
 
-### 3️⃣ Quản lý lịch sử
+| Phím | Chức năng |
+|------|-----------|
+| `Ctrl + V` | Paste URL |
+| `Enter` | Bắt đầu tải |
+| `Ctrl + K` | Xóa input |
 
-#### Xem lịch sử
-- Chuyển sang tab **"📋 History"**
-- Xem danh sách video đã tải (thành công & thất bại)
+### 🌙 Dark Mode
 
-#### Tìm kiếm
-- Nhập từ khóa vào thanh search
-- Tìm theo: tên video, platform, URL
-
-#### Lọc dữ liệu
-- **Tất cả**: Hiển thị toàn bộ
-- **✅ Thành công**: Chỉ video tải thành công
-- **❌ Thất bại**: Chỉ video thất bại
-- **🎬 MP4**: Chỉ video
-- **🎵 MP3**: Chỉ audio
-
-#### Export lịch sử
-- Nhấn nút **"📤 Export JSON"**
-- File sẽ được tải về với tên: `download-history-YYYY-MM-DD.json`
-
-#### Copy URL
-- Với mỗi video thành công, nhấn **"📋 Copy URL"** để tải lại
-
-#### Xóa lịch sử
-- **Xóa 1 item**: Nhấn nút 🗑️ bên cạnh video
-- **Xóa tất cả**: Nhấn nút "🗑️ Xóa tất cả" ở góc trên
-
----
-
-### 4️⃣ Phím tắt hữu ích
-
-| Phím tắt | Chức năng |
-|----------|-----------|
-| `Ctrl + V` | Paste URL từ clipboard |
-| `Enter` | Bắt đầu tải (khi focus ở ô input) |
-| `Ctrl + K` | Xóa ô nhập URL |
-
----
-
-### 5️⃣ Dark Mode
-
-- Nhấn biểu tượng **🌙/☀️** ở góc trên bên phải
-- Preference được lưu tự động
-- Tất cả charts và UI tự động adapt
+Nhấn icon **🌙/☀️** góc trên phải để toggle
 
 ---
 
 ## 📁 Cấu trúc Project
 
 ```
-video-downloader-pro/
+Download-From-URL/
 │
-├── app.py                    # Flask backend + WebSocket + Database
-├── requirements.txt          # Python dependencies
-├── README.md                # Tài liệu này
-├── downloads.db             # SQLite database (tự động tạo)
+├── app.py                # Flask backend + WebSocket
+├── requirements.txt      # Dependencies
+├── downloads.db          # SQLite database (auto-created)
 │
 ├── templates/
-│   └── index.html           # Frontend HTML
+│   └── index.html       # Frontend
 │
 ├── static/
-│   ├── style.css            # Styling with Dark Mode
-│   └── script.js            # WebSocket client + UI logic
+│   ├── style.css        # UI Styling
+│   └── script.js        # Client Logic
 │
-└── downloads/               # Thư mục chứa video đã tải
-    ├── video1.mp4
-    ├── audio1.mp3
-    └── ...
+└── downloads/           # Downloaded files
 ```
 
 ---
 
-## 🔧 Cấu hình nâng cao
+## 🌐 Nền tảng hỗ trợ
 
-### Thay đổi port server
+### 🔥 Popular
+YouTube • Facebook • Instagram • TikTok • Twitter/X • Reddit • Vimeo • Dailymotion • Twitch
 
-Trong `app.py`, dòng cuối:
+### 🎵 Music
+SoundCloud • Bandcamp • Mixcloud • Audiomack
 
-```python
-if __name__ == "__main__":
-    port = 5000  # Đổi thành port khác (VD: 8080)
-```
-
-### Thay đổi thư mục tải về
-
-Trong `app.py`, dòng 13:
-
-```python
-DOWNLOAD_DIR = "downloads"  # Đổi thành đường dẫn mong muốn
-```
-
-### Giới hạn chất lượng video mặc định
-
-Trong `app.py`, tìm `format_string` và chỉnh sửa:
-
-```python
-# Giới hạn tối đa 1080p
-format_string = "bestvideo[height<=1080]..."
-
-# Giới hạn tối đa 720p
-format_string = "bestvideo[height<=720]..."
-```
-
-### Thêm User-Agent tùy chỉnh
-
-Trong `app.py`, phần `common_opts`:
-
-```python
-"user_agent": "Your Custom User Agent String"
-```
-
----
-
-## 🌐 Danh sách nền tảng hỗ trợ
-
-### 🔥 Popular Platforms
-- ✅ YouTube (videos, playlists, shorts)
-- ✅ Facebook (videos, reels)
-- ✅ Instagram (posts, reels, stories, IGTV)
-- ✅ TikTok (videos)
-- ✅ Twitter/X (videos)
-- ✅ Reddit (videos)
-- ✅ Vimeo
-- ✅ Dailymotion
-- ✅ Twitch (clips, VODs)
-
-### 🎵 Music & Audio
-- SoundCloud
-- Bandcamp
-- Mixcloud
-- Audiomack
-
-### 📺 Video Platforms
-- Bilibili
-- Niconico
-- Vevo
-- 9GAG
-
-### 📱 Social Media
-- LinkedIn (videos)
-- Pinterest (videos)
-- Snapchat (stories)
+### 📺 Video
+Bilibili • Niconico • Vevo • 9GAG
 
 ### 🎓 Education
-- Coursera
-- Udemy
-- Khan Academy
+Coursera • Udemy • Khan Academy
 
-**Và 1000+ nền tảng khác** nhờ thư viện `yt-dlp`
+**Và 1000+ nền tảng khác!**
 
-Danh sách đầy đủ: https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md
-
----
-
-## 🎯 Demo Screenshots
-
-### 1. Giao diện chính - Light Mode
-```
-┌────────────────────────────────────────────────┐
-│           📥 Video Downloader Pro              │
-│  Hỗ trợ: YouTube, Facebook, Instagram...      │
-├────────────────────────────────────────────────┤
-│  [📋 Paste]  [🗑️ Xóa]                         │
-│  ┌──────────────────────────┐  [🔍 Preview]   │
-│  │ Paste URL here...        │                  │
-│  └──────────────────────────┘                  │
-│                                                 │
-│  Định dạng: [MP4 ▼]                           │
-│  Chất lượng: [1080p ▼]                        │
-│                                                 │
-│          [⬇️ TẢI XUỐNG]                        │
-└────────────────────────────────────────────────┘
-```
-
-### 2. Đang tải xuống
-```
-┌────────────────────────────────────────────────┐
-│  ⚡ Đang tải xuống...              87.3%       │
-│  ████████████████░░░░                          │
-│                                                 │
-│  Tốc độ: 5.2 MB/s | Đã tải: 45.6 MB           │
-│  🎬 Amazing Video Title Here                   │
-└────────────────────────────────────────────────┘
-```
-
-### 3. Lịch sử tải
-```
-┌────────────────────────────────────────────────┐
-│  📋 Lịch sử tải xuống        [📤Export] [🗑️]  │
-│  [🔍 Tìm kiếm...]                              │
-│  [Tất cả] [✅Success] [❌Failed] [🎬MP4] [🎵MP3]│
-├────────────────────────────────────────────────┤
-│  📺  ✅ Video Title                            │
-│       📱YouTube  📦MP4  💾45.6MB  ⏱️5:30      │
-│       📅 2024-01-19 10:30    [📋Copy] [🗑️]    │
-└────────────────────────────────────────────────┘
-```
-
----
-
-## ⚠️ Lưu ý quan trọng
-
-### ⚖️ Bản quyền
-- **Tôn trọng bản quyền** khi tải video
-- Chỉ tải video bạn có quyền hoặc cho mục đích cá nhân
-- Không sử dụng cho mục đích thương mại trái phép
-
-### 🔒 Giới hạn
-- ❌ **Video riêng tư**: Không thể tải
-- ❌ **Video yêu cầu login**: Không hỗ trợ
-- ❌ **Video có DRM**: Bị bảo vệ, không tải được
-- ❌ **Live streams**: Không hỗ trợ (chỉ VODs)
-
-### 📡 Kết nối
-- Cần **kết nối internet ổn định**
-- Tốc độ tải phụ thuộc vào:
-  - Băng thông internet
-  - Server của nền tảng
-  - Kích thước file
+Danh sách đầy đủ: [yt-dlp supported sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)
 
 ---
 
 ## 🐛 Xử lý lỗi thường gặp
 
-### ❌ "FFmpeg not found"
-**Nguyên nhân:** FFmpeg chưa được cài đặt hoặc không có trong PATH
+### ❌ FFmpeg not found
 
 **Giải pháp:**
-1. Cài đặt FFmpeg theo hướng dẫn [ở trên](#bước-1-cài-đặt-ffmpeg)
-2. Khởi động lại terminal/command prompt
+1. Cài FFmpeg theo [hướng dẫn trên](#1️⃣-cài-ffmpeg)
+2. Restart terminal
 3. Kiểm tra: `ffmpeg -version`
 
 ---
 
-### ❌ "Video unavailable"
-**Nguyên nhân:** Video đã bị xóa, private, hoặc bị giới hạn khu vực
+### ❌ Video unavailable
+
+**Nguyên nhân:** Video bị xóa, private, hoặc giới hạn khu vực
 
 **Giải pháp:**
-- Kiểm tra URL có đúng không
+- Kiểm tra URL
 - Thử mở video trên trình duyệt
 - Thử video khác
 
 ---
 
-### ❌ "Sign in to confirm your age"
-**Nguyên nhân:** Video yêu cầu xác nhận tuổi/đăng nhập
+### ❌ Sign in required / Private video
+
+**Giải pháp:** App không hỗ trợ video yêu cầu login hoặc private
+
+---
+
+### ❌ HTTP Error 403
 
 **Giải pháp:**
-- App không hỗ trợ video yêu cầu login
+- Nền tảng có thể chặn downloader
+- Thử lại sau vài phút
 - Thử video khác
 
 ---
 
-### ❌ "Private video"
-**Nguyên nhân:** Video ở chế độ riêng tư
+### ❌ Port 5000 đã dùng (macOS)
 
-**Giải pháp:**
-- Không thể tải video private
-- Liên hệ chủ video để public
+**Nguyên nhân:** AirPlay Receiver chiếm port
 
----
-
-### ❌ "HTTP Error 403: Forbidden"
-**Nguyên nhân:** Server từ chối truy cập
-
-**Giải pháp:**
-- Nền tảng có thể chặn bot/downloader
-- Thử lại sau vài phút
-- Thử video khác từ nền tảng đó
+**Giải pháp:** App tự động chọn port khác (xem trong terminal)
 
 ---
 
-### ❌ Port 5000 đã được sử dụng (macOS)
-**Nguyên nhân:** AirPlay Receiver chiếm port 5000
-
-**Giải pháp:**
-- App tự động chọn port khác (5001, 5002...)
-- Xem port trong terminal khi chạy app
-- Hoặc tắt AirPlay Receiver:
-  ```
-  System Preferences → Sharing → AirPlay Receiver → Off
-  ```
-
----
-
-### ❌ "Module not found"
-**Nguyên nhân:** Chưa cài dependencies
+### ❌ Module not found
 
 **Giải pháp:**
 ```bash
@@ -580,199 +295,149 @@ pip install -r requirements.txt
 
 ---
 
-### ❌ Database error
-**Nguyên nhân:** File database bị lỗi
+### 🔍 Debug Commands
 
-**Giải pháp:**
-1. Backup file `downloads.db` (nếu cần)
-2. Xóa file `downloads.db`
-3. Khởi động lại app (sẽ tạo database mới)
-
----
-
-### ❌ WebSocket connection failed
-**Nguyên nhân:** Firewall chặn hoặc port bị chiếm
-
-**Giải pháp:**
-1. Tắt tạm firewall/antivirus
-2. Đổi port trong `app.py`
-3. Kiểm tra không có app nào khác dùng port
-
----
-
-## 🔍 Troubleshooting Commands
-
-### Kiểm tra Python
 ```bash
+# Kiểm tra Python
 python --version
-python3 --version
-which python
-which python3
-```
 
-### Kiểm tra pip
-```bash
+# Kiểm tra pip
 pip --version
-pip list
-```
 
-### Kiểm tra FFmpeg
-```bash
+# Kiểm tra FFmpeg
 ffmpeg -version
-which ffmpeg  # Mac/Linux
-where ffmpeg  # Windows
-```
 
-### Kiểm tra dependencies
-```bash
+# Xem installed packages
+pip list
+
+# Kiểm tra dependencies
 pip show flask
 pip show yt-dlp
-pip show flask-socketio
-```
-
-### Xem log chi tiết
-Khi chạy app, xem terminal để thấy log đầy đủ
-
----
-
-## 📊 Database Schema
-
-App sử dụng SQLite để lưu lịch sử:
-
-```sql
-CREATE TABLE downloads (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    url TEXT,
-    platform TEXT,
-    format TEXT,
-    file_size INTEGER,
-    duration TEXT,
-    filename TEXT,
-    status TEXT,
-    download_date TIMESTAMP,
-    error_msg TEXT
-);
-```
-
-**Truy vấn database:**
-```bash
-sqlite3 downloads.db "SELECT * FROM downloads;"
 ```
 
 ---
 
-## 🚀 Performance Tips
+## ⚙️ Cấu hình nâng cao
 
-### Tăng tốc độ tải
-1. **Kết nối internet nhanh**: Yếu tố quan trọng nhất
-2. **Chọn chất lượng thấp hơn**: 720p thay vì 1080p
-3. **Tải MP3**: Nhanh hơn nhiều so với video
+### Đổi port server
 
-### Tiết kiệm dung lượng
-1. **Chọn 720p/480p**: Thay vì 1080p/4K
-2. **Tải MP3**: Chỉ 3-10 MB thay vì 50-500 MB
+Trong `app.py`:
+```python
+if __name__ == "__main__":
+    port = 5000  # Đổi thành port khác
+```
 
-### Quản lý lịch sử
-1. **Export thường xuyên**: Backup dữ liệu
-2. **Xóa lịch sử cũ**: Giữ database nhẹ
+### Đổi thư mục download
+
+Trong `app.py`:
+```python
+DOWNLOAD_DIR = "downloads"  # Đổi đường dẫn
+```
+
+### Giới hạn chất lượng mặc định
+
+Trong `app.py`, tìm `format_string`:
+```python
+# Giới hạn 1080p
+format_string = "bestvideo[height<=1080]..."
+
+# Giới hạn 720p
+format_string = "bestvideo[height<=720]..."
+```
 
 ---
 
-## 🛠️ Development
+## 🛠️ Tech Stack
 
-### Tech Stack
-- **Backend**: Flask + Flask-SocketIO
-- **Frontend**: Vanilla JavaScript + CSS3
-- **Database**: SQLite
-- **Video Processing**: yt-dlp + FFmpeg
-- **Real-time**: WebSocket
+- **Backend:** Flask + Flask-SocketIO
+- **Frontend:** Vanilla JavaScript + CSS3
+- **Database:** SQLite
+- **Video Engine:** yt-dlp + FFmpeg
+- **Real-time:** WebSocket
 
-### Project Dependencies
-```
-Flask==3.0.0
-Flask-SocketIO==5.3.5
-yt-dlp==2024.1.7
-requests==2.31.0
-python-socketio==5.10.0
-```
+---
 
-### API Endpoints
+## 📊 API Reference
 
-#### REST API
+### REST Endpoints
+
 - `GET /` - Main page
 - `GET /api/history` - Get download history
-- `GET /api/search-history?q=query` - Search history
-- `GET /api/export-history` - Export as JSON
+- `GET /api/search-history?q=query` - Search
+- `GET /api/export-history` - Export JSON
 - `DELETE /api/delete/<id>` - Delete record
-- `POST /api/clear-history` - Clear all history
+- `POST /api/clear-history` - Clear all
 
-#### WebSocket Events
-- `connect` - Client connected
-- `disconnect` - Client disconnected
-- `get_video_info` - Preview video info
+### WebSocket Events
+
+**Client → Server:**
+- `get_video_info` - Preview video
 - `start_download` - Start download
-- `status` - Download status update
+
+**Server → Client:**
+- `status` - Status update
 - `progress` - Progress update
-- `info` - Video information
-- `done` - Download completed
+- `info` - Video info
+- `done` - Completed
 - `error` - Error occurred
+
+---
+
+## ⚠️ Lưu ý
+
+### Bản quyền
+- ⚖️ Tôn trọng bản quyền khi tải
+- ⚖️ Chỉ tải cho mục đích cá nhân
+- ⚖️ Không dùng cho thương mại trái phép
+
+### Giới hạn
+- ❌ Video private/login required: Không hỗ trợ
+- ❌ Video có DRM: Không tải được
+- ❌ Live streams: Chỉ hỗ trợ VODs
+- 📡 Cần internet ổn định
 
 ---
 
 ## 📚 Resources
 
-### Documentation
 - [yt-dlp Documentation](https://github.com/yt-dlp/yt-dlp)
 - [FFmpeg Documentation](https://ffmpeg.org/documentation.html)
 - [Flask Documentation](https://flask.palletsprojects.com/)
 - [Socket.IO Documentation](https://socket.io/docs/)
 
-### Related Projects
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Video downloader core
-- [FFmpeg](https://ffmpeg.org/) - Media processing
-- [Flask-SocketIO](https://flask-socketio.readthedocs.io/) - WebSocket support
-
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Đóng góp của bạn giúp project tốt hơn.
+Contributions welcome! 
 
-### Cách đóng góp
 1. Fork project
-2. Tạo branch mới: `git checkout -b feature/AmazingFeature`
-3. Commit changes: `git commit -m 'Add AmazingFeature'`
-4. Push to branch: `git push origin feature/AmazingFeature`
-5. Mở Pull Request
+2. Create branch: `git checkout -b feature/AmazingFeature`
+3. Commit: `git commit -m 'Add AmazingFeature'`
+4. Push: `git push origin feature/AmazingFeature`
+5. Open Pull Request
 
-### Báo lỗi
-- Mở [Issue](https://github.com/your-username/video-downloader-pro/issues)
-- Mô tả chi tiết lỗi
-- Kèm screenshot nếu có
-- Ghi rõ hệ điều hành
+**Báo lỗi:** [GitHub Issues](https://github.com/thien-2k5/Download-From-URL/issues)
 
 ---
 
 ## 📝 Changelog
 
 ### Version 2.0.0 (2024-01-19)
-- ✨ Thêm Download History với SQLite
-- ✨ Thêm Smart Search & Advanced Filters
-- ✨ Thêm Export History (JSON)
-- ✨ Thêm Dark Mode với preference
-- ✨ Thêm Clipboard Integration
-- ✨ Thêm Keyboard Shortcuts
-- ✨ Thêm Toast Notifications
-- ✨ Thêm Video Preview
-- ✨ Thêm Quality Selection
-- 🐛 Fix Instagram thumbnail preview
-- 🔧 Tối ưu UI/UX
-- 📚 Cập nhật documentation
+- ✨ Download History với SQLite
+- ✨ Smart Search & Filters
+- ✨ Export JSON
+- ✨ Dark Mode
+- ✨ Clipboard Integration
+- ✨ Keyboard Shortcuts
+- ✨ Toast Notifications
+- ✨ Video Preview
+- ✨ Quality Selection
+- 🐛 Bug fixes & improvements
 
 ### Version 1.0.0 (2024-01-01)
 - 🎉 Initial release
-- ✅ Basic download functionality
+- ✅ Basic download
 - ✅ Real-time progress
 - ✅ Multi-platform support
 
@@ -780,44 +445,24 @@ Contributions are welcome! Đóng góp của bạn giúp project tốt hơn.
 
 ## 📄 License
 
-MIT License
-
-Copyright (c) 2024 Video Downloader Pro
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+MIT License - Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Powerful video downloader
-- [FFmpeg](https://ffmpeg.org/) - Video processing powerhouse
-- [Flask](https://flask.palletsprojects.com/) - Lightweight web framework
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) - Video downloader core
+- [FFmpeg](https://ffmpeg.org/) - Media processing
+- [Flask](https://flask.palletsprojects.com/) - Web framework
 - [Socket.IO](https://socket.io/) - Real-time communication
 
 ---
 
-## 📧 Contact & Support
+## 📧 Contact
 
-- **GitHub Issues**: [Report bugs](https://github.com/your-username/video-downloader-pro/issues)
-- **Discussions**: [Ask questions](https://github.com/your-username/video-downloader-pro/discussions)
-- **Email**: your.email@example.com
+- **GitHub:** [thien-2k5](https://github.com/thien-2k5)
+- **Issues:** [Report bugs](https://github.com/thien-2k5/Download-From-URL/issues)
+- **Discussions:** [Ask questions](https://github.com/thien-2k5/Download-From-URL/discussions)
 
 ---
 
@@ -825,8 +470,6 @@ SOFTWARE.
 
 **⭐ Nếu project hữu ích, hãy cho 1 star nhé! ⭐**
 
-Made with ❤️ by [Your Name]
-
-[⬆ Back to top](#-video-downloader-pro)
+Made with ❤️ by [thien-2k5](https://github.com/thien-2k5)
 
 </div>
