@@ -191,7 +191,9 @@ python3 app.py
 | Phím | Chức năng |
 |------|-----------|
 | `Ctrl + V` | Paste URL |
-| `Enter` | Bắt đầu tải |
+| `Enter` | Tải ngay |
+| `Shift + Enter` | Xuống dòng (trong textarea) |
+| `Ctrl + Enter` | Thêm vào Queue |
 | `Ctrl + K` | Xóa input |
 
 ### 🌙 Dark Mode
@@ -435,7 +437,14 @@ Contributions welcome!
 - ✨ Quality Selection
 - 🐛 Bug fixes & improvements
 
-### Version 2.1.0 (2025-01-20)
+### Version 2.2.0 (2025-01-20)
+- ✨ **Multi-Video Preview**: Hiển thị preview tất cả video khi paste nhiều URLs
+- ✨ **Enhanced Shortcuts**: Enter tải ngay, Shift+Enter xuống dòng, Ctrl+Enter thêm queue
+- 🐛 Fix `parseUrls()` cho Windows line endings (CRLF)
+- 🐛 Fix Queue display không hiện (queueBadge ID)
+- 🐛 Fix progress emit cho frontend
+
+### Version 2.1.0 (2025-01-19)
 - ✨ **Multi-URL Queue**: Hỗ trợ dán nhiều link và tải hàng loạt
 - ✨ **New UI**: Giao diện 3 Tab (Download, Queue, History) hiện đại
 - ✨ **RESTful API**: Hỗ trợ API chuẩn cho Queue và Download
