@@ -435,6 +435,15 @@ Contributions welcome!
 - ✨ Quality Selection
 - 🐛 Bug fixes & improvements
 
+### Version 2.1.0 (2025-01-20)
+- ✨ **Multi-URL Queue**: Hỗ trợ dán nhiều link và tải hàng loạt
+- ✨ **New UI**: Giao diện 3 Tab (Download, Queue, History) hiện đại
+- ✨ **RESTful API**: Hỗ trợ API chuẩn cho Queue và Download
+- ✨ **Pills Navigation**: Thanh điều hướng dạng viên thuốc
+- ✨ **Improved Quality Logic**: Tối ưu hóa chọn định dạng 4K/2K
+- ✨ **Network Tools**: DNS Resolver, Header lookup
+- 🐛 Fix lỗi UI, cải thiện hiệu năng tải và hiển thị
+
 ### Version 1.0.0 (2024-01-01)
 - 🎉 Initial release
 - ✅ Basic download
