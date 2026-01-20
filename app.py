@@ -324,16 +324,39 @@ def get_history():
         return jsonify([])
 
 @app.route("/api/delete/<int:id>", methods=['DELETE'])
+@app.route("/api/delete/<int:id>", methods=['DELETE'])
 def delete_record(id):
-    """Delete a download record"""
+    """Delete a download record and the actual file"""
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
+        
+        # 1. Lấy tên file trước khi xóa record
+        c.execute("SELECT filename FROM downloads WHERE id=?", (id,))
+        row = c.fetchone()
+        
+        if row and row[0]:
+            filename = row[0]
+            # Tạo đường dẫn file đầy đủ
+            file_path = os.path.join(DOWNLOAD_DIR, filename)
+            
+            # Xóa file nếu tồn tại
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    safe_print(f"[FILE] Deleted physical file: {file_path}")
+                except Exception as e:
+                    safe_print(f"[FILE] Error deleting physical file: {e}")
+            else:
+                safe_print(f"[FILE] File not found: {file_path}")
+
+        # 2. Xóa record trong DB
         c.execute("DELETE FROM downloads WHERE id=?", (id,))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
     except Exception as e:
+        safe_print(f"[DB] Error deleting record: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route("/api/clear-history", methods=['POST'])
