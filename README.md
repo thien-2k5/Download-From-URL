@@ -388,9 +388,9 @@ format_string = "bestvideo[height<=720]..."
 ## ⚠️ Lưu ý
 
 ### Bản quyền
-- ⚖️ Tôn trọng bản quyền khi tải
-- ⚖️ Chỉ tải cho mục đích cá nhân
-- ⚖️ Không dùng cho thương mại trái phép
+-  Tôn trọng bản quyền khi tải
+-  Chỉ tải cho mục đích cá nhân
+-  Không dùng cho thương mại trái phép
 
 ### Giới hạn
 - ❌ Video private/login required: Không hỗ trợ
