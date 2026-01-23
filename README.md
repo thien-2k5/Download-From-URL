@@ -243,7 +243,7 @@ Danh sách đầy đủ: [yt-dlp supported sites](https://github.com/yt-dlp/yt-d
 
 ---
 
-## 🐛 Xử lý lỗi thường gặp
+##  Xử lý lỗi thường gặp
 
 ### ❌ FFmpeg not found
 
